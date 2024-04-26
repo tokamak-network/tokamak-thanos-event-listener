@@ -13,8 +13,11 @@ run: $(TARGET)
 	$<
 
 $(TARGET): $(SOURCE_FILES)
-	go build -o $@ ./cmd/notif/main.go
+	go build -o $@ ./cmd/thanosnotif/main.go
 	@echo "Done building"
+
+image:
+	docker build --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux -t thanos-app-notif .
 
 clean:
 	rm -rf $(BUILD_DIR)
