@@ -1,5 +1,5 @@
 BUILD_DIR=./build
-TARGET=$(BUILD_DIR)/app-notif
+TARGET=$(BUILD_DIR)/thanos-app-notif
 
 SOURCE_FILES := $(shell find . -name *.go)
 
