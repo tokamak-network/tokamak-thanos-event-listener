@@ -3,11 +3,12 @@ package notification
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/log"
 )
 
 type SlackData struct {
@@ -46,30 +47,31 @@ func (slackNotificationService *SlackNotificationService) Notify(title string, t
 	data := &SlackData{Title: title, Text: text}
 
 	payload, err := json.Marshal(data)
-	if err == nil {
-		req, err := http.NewRequest("POST", slackNotificationService.url, bytes.NewBuffer(payload))
-		if err != nil {
-			return err
-		}
-		// Set headers
-		req.Header.Set("Content-Type", "application/json")
-
-		// Create a new client and execute our request
-		client := &http.Client{
-			Timeout: time.Second * 5,
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		// Read and print the response
-		body, _ := io.ReadAll(resp.Body)
-		fmt.Println(string(body))
-		return nil
+	if err != nil {
+		return err
 	}
-	return err
+	req, err := http.NewRequest("POST", slackNotificationService.url, bytes.NewBuffer(payload))
+	if err != nil {
+		return err
+	}
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+
+	// Create a new client and execute our request
+	client := &http.Client{
+		Timeout: time.Second * 5,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Read and print the response
+	body, _ := io.ReadAll(resp.Body)
+
+	log.GetLogger().Infow("Response", "body", string(body))
+	return nil
 }
 
 func MakeSlackNotificationService(url string, numOfRetry int) *SlackNotificationService {

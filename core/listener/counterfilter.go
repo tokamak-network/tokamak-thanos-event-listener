@@ -1,4 +1,4 @@
-package corelistener
+package listener
 
 import (
 	"github.com/bits-and-blooms/bloom/v3"

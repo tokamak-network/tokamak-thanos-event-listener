@@ -1,13 +1,15 @@
-package corelistener
+package listener
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"github.com/ethereum/go-ethereum/common"
+)
 
-func CalculateAddresses(requests []SubcribeRequest) []common.Address {
+func CalculateAddresses(requests []RequestSubscriber) []common.Address {
 	encountered := map[common.Address]bool{}
 	result := []common.Address{}
 
 	for _, v := range requests {
-		if v.GetRequestType() == REQUEST_EVENT_TYPE {
+		if v.GetRequestType() == RequestEventType {
 			eventRequest, _ := v.(*EventRequest)
 			if !encountered[eventRequest.contractAddress] {
 				encountered[eventRequest.contractAddress] = true

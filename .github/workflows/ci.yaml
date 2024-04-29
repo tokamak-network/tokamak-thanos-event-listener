@@ -1,0 +1,106 @@
+name: Go Project CI
+
+concurrency:
+  group: ci-workflow-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - ci
+  pull_request:
+    branches:
+      - "*"
+
+env:
+  SERVICE: node-proxy
+
+jobs:
+  prepare:
+    runs-on: [ubuntu-latest]
+    outputs:
+      current_branch: ${{ steps.current_branch.outputs.value }}
+      head_sha: ${{ steps.head_sha.outputs.value }}
+      image_tag: ${{ steps.get_tag.outputs.image_tag }}
+      branch_tag: ${{ steps.get_tag.outputs.branch_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract branch
+        shell: bash
+        id: current_branch
+        run: |
+          if [[ ! "${{ github.ref }}"  = "refs/tags/"* ]]; then
+            if [[ "${{ github.event_name }}" = "pull_request" ]]; then
+              HEAD_REF=$(printf "%q" "${{ github.head_ref }}")
+              HEAD_REF=${HEAD_REF/refs\/heads\//}
+              BRANCH=$HEAD_REF
+            else
+              REF=$(printf "%q" "${{ github.ref }}")
+              REF_BRANCH=${REF/refs\/pull\//}
+              REF_BRANCH=${REF_BRANCH/refs\/heads\//}
+              BRANCH=$REF_BRANCH
+            fi
+          else
+            REF=$(printf "%q" "${{ github.ref }}")
+            REF_BRANCH=${REF/refs\/tags\//}
+            BRANCH=$REF_BRANCH
+          fi
+
+          echo "value=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Extract GitHub HEAD SHA
+        id: head_sha
+        run: echo "value=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Get Docker image tag
+        id: get_tag
+        env:
+          CURRENT_BRANCH: ${{ steps.current_branch.outputs.value }}
+        run: |
+          short_sha="$(git rev-parse --short HEAD)"
+          branch_tag="$(echo "$CURRENT_BRANCH" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/-$//g')"
+          echo "image_tag=$branch_tag-$short_sha" >> "$GITHUB_OUTPUT"
+          echo "branch_tag=$branch_tag-$short_sha" >> "$GITHUB_OUTPUT"
+  lint:
+    name: Run golangci-lint
+    runs-on: [ubuntu-latest]
+    needs:
+      - prepare
+    steps:
+      - name: Add git config for Go private module
+        run: git config --global url."https://${{ secrets.GH_PAT }}:x-oauth-basic@github.com/".insteadOf https://github.com/
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+           go-version: "1.21.x"
+      - name: download go module
+        shell: bash
+        run: go mod download
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.54.2
+          args: --config=.golangci.yml --timeout=10m
+          skip-pkg-cache: true
+          skip-build-cache: true
+          skip-cache: true
+
+  test:
+    runs-on: [ubuntu-latest]
+    needs:
+      - prepare
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+           go-version: "1.21.x"
+      - name: Run test
+        run: go test -race -v ./...
