@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/log"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
 type SlackData struct {
@@ -22,21 +22,20 @@ type SlackNotificationService struct {
 	off        bool
 }
 
+func MakeSlackNotificationService(url string, numOfRetry int) *SlackNotificationService {
+	return &SlackNotificationService{url: url, numOfRetry: numOfRetry, off: false}
+}
+
+func MakeDefaultSlackNotificationService() *SlackNotificationService {
+	return &SlackNotificationService{url: os.Getenv("SLACK_URL"), numOfRetry: 5, off: os.Getenv("OFF") == "1"}
+}
+
 func (slackNotificationService *SlackNotificationService) Enable() {
 	slackNotificationService.off = false
 }
 
 func (slackNotificationService *SlackNotificationService) Disable() {
 	slackNotificationService.off = true
-}
-
-func (slackNotificationService *SlackNotificationService) NotifyWithReTry(title string, text string) {
-	for i := 0; i < slackNotificationService.numOfRetry; i++ {
-		err := slackNotificationService.Notify(title, text)
-		if err == nil {
-			break
-		}
-	}
 }
 
 func (slackNotificationService *SlackNotificationService) Notify(title string, text string) error {
@@ -74,10 +73,11 @@ func (slackNotificationService *SlackNotificationService) Notify(title string, t
 	return nil
 }
 
-func MakeSlackNotificationService(url string, numOfRetry int) *SlackNotificationService {
-	return &SlackNotificationService{url: url, numOfRetry: numOfRetry, off: false}
-}
-
-func MakeDefaultSlackNotificationService() *SlackNotificationService {
-	return &SlackNotificationService{url: os.Getenv("SLACK_URL"), numOfRetry: 5, off: os.Getenv("OFF") == "1"}
+func (slackNotificationService *SlackNotificationService) NotifyWithReTry(title string, text string) {
+	for i := 0; i < slackNotificationService.numOfRetry; i++ {
+		err := slackNotificationService.Notify(title, text)
+		if err == nil {
+			break
+		}
+	}
 }

@@ -3,9 +3,9 @@ package thanosnotif
 import (
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/tokamak-network/tokamak-thanos-event-listener/core/listener"
-	"github.com/tokamak-network/tokamak-thanos-event-listener/core/notification"
-	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/log"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/listener"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/notification"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
 type Notifier interface {
@@ -29,7 +29,7 @@ func (app *App) ERC20TransferEvent(vLog *types.Log) {
 }
 
 func (app *App) Start() error {
-	service := listener.MakeService(app.cfg.L1_WS_RPC)
+	service := listener.MakeService(app.cfg.L1WsRpc)
 	// for testing: listen Transfer event. Replace contract address when you make testing
 	for _, transferEventAddress := range app.cfg.TransferEventAddresses {
 		depositRelayedRequest := listener.MakeEventRequest(transferEventAddress, TransferEventABI, app.ERC20TransferEvent)

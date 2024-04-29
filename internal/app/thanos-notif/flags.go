@@ -25,25 +25,25 @@ var (
 		Name:    L1RpcUrlFlagName,
 		Usage:   "L1 RPC url",
 		Value:   "http://localhost:8545",
-		EnvVars: []string{"L1_RPC"},
+		EnvVars: []string{"L1Rpc"},
 	}
 	L1WsRpcFlag = &cli.StringFlag{
 		Name:    L1WsRpcUrlFlagName,
 		Usage:   "L1 RPC url",
 		Value:   "ws://localhost:8546",
-		EnvVars: []string{"L1_WS_RPC"},
+		EnvVars: []string{"L1WsRpc"},
 	}
 	L2RPCFlag = &cli.StringFlag{
 		Name:    L2RpcUrFlagName,
 		Usage:   "L2 RPC url",
 		Value:   "http://localhost:9545",
-		EnvVars: []string{"L2_RPC"},
+		EnvVars: []string{"L2Rpc"},
 	}
 	L2WsRPCFlag = &cli.StringFlag{
 		Name:    L2WsRpcUrFlagName,
 		Usage:   "L2 Ws RPC url",
 		Value:   "ws://localhost:9546",
-		EnvVars: []string{"L2_WS_RPC"},
+		EnvVars: []string{"L2WsRpc"},
 	}
 	L1StandardBridgeFlag = &cli.StringFlag{
 		Name:    L1StandardBridgeFlagName,

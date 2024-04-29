@@ -3,10 +3,11 @@ package main
 import (
 	"os"
 
+	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
+
 	"github.com/urfave/cli/v2"
 
-	thanosnotif "github.com/tokamak-network/tokamak-thanos-event-listener/core/thanos-notif"
-	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/log"
+	thanosnotif "github.com/tokamak-network/tokamak-thanos-event-listener/internal/app/thanos-notif"
 )
 
 var app = &cli.App{
@@ -28,10 +29,10 @@ func main() {
 
 func setupThanosListener(ctx *cli.Context) error {
 	config := &thanosnotif.Config{
-		L1_RPC:                 ctx.String(thanosnotif.L1RpcUrlFlagName),
-		L1_WS_RPC:              ctx.String(thanosnotif.L1WsRpcUrlFlagName),
-		L2_RPC:                 ctx.String(thanosnotif.L2RpcUrFlagName),
-		L2_WS_RPC:              ctx.String(thanosnotif.L2WsRpcUrFlagName),
+		L1Rpc:                  ctx.String(thanosnotif.L1RpcUrlFlagName),
+		L1WsRpc:                ctx.String(thanosnotif.L1WsRpcUrlFlagName),
+		L2Rpc:                  ctx.String(thanosnotif.L2RpcUrFlagName),
+		L2WsRpc:                ctx.String(thanosnotif.L2WsRpcUrFlagName),
 		L1StandBridge:          ctx.String(thanosnotif.L1StandardBridgeFlagName),
 		L2StandBridge:          ctx.String(thanosnotif.L2StandardBridgeFlagName),
 		L1CrossDomainMessenger: ctx.String(thanosnotif.L1CrossDomainMessengerFlagName),

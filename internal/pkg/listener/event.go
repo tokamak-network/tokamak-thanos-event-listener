@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 
-	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/log"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
 var (
