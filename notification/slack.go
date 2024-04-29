@@ -22,11 +22,11 @@ type SlackNotificationService struct {
 }
 
 func (slackNotificationService *SlackNotificationService) Enable() {
-	slackNotificationService.off = true
+	slackNotificationService.off = false
 }
 
 func (slackNotificationService *SlackNotificationService) Disable() {
-	slackNotificationService.off = false
+	slackNotificationService.off = true
 }
 
 func (slackNotificationService *SlackNotificationService) NotifyWithReTry(title string, text string) {

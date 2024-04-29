@@ -1,6 +1,13 @@
 package thanosnotif
 
-import "github.com/tokamak-network/tokamak-thanos-event-listener/notification"
+import (
+	"fmt"
+	"time"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	corelistener "github.com/tokamak-network/tokamak-thanos-event-listener/core-listener"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/notification"
+)
 
 type NotifAppConfig struct {
 	L1_RPC string
@@ -23,7 +30,17 @@ type NotifApp struct {
 	notifService notification.INotifService
 }
 
+func (app *NotifApp) ERC20TransferEvent(vLog *types.Log) {
+	fmt.Println("ERC20TransferEvent: ", vLog)
+}
+
 func (app *NotifApp) Start() error {
+	service := corelistener.MakeService("ws://localhost:8546")
+	// for testing: listen Transfer event. Replace contract address when you make testing
+	depositRelayedRequest := corelistener.MakeEventRequest("0xC7844340d14deAedfDD2f2dD9360c336661b2F0A", "Transfer(address,address,uint256)", app.ERC20TransferEvent)
+	service.AddSubscribeRequest(depositRelayedRequest)
+	service.Start()
+	time.Sleep(time.Second)
 	return nil
 }
 
