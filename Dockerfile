@@ -20,4 +20,4 @@ FROM  --platform=${TARGETOS}/${TARGETARCH} busybox:latest
 COPY --from=thanos-build /thanos-events/thanos-app-notif /bin/thanos-app-notif
 COPY --from=certs /etc/ssl/certs /etc/ssl/certs
 
-ENTRYPOINT [ "thasnos-app-notif" ]
+ENTRYPOINT [ "thanos-app-notif" ]
