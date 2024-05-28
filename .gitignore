@@ -23,7 +23,7 @@ go.work
 # IDE configuration files
 .idea/
 .vscode/launch.json
-
+.fleet/
 # Test result
 test/logs
 test/result

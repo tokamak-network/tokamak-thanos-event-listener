@@ -10,24 +10,27 @@ import (
 	thanosnotif "github.com/tokamak-network/tokamak-thanos-event-listener/internal/app/thanos-notif"
 )
 
-var app = &cli.App{
-	Name:  "thanos-notif",
-	Usage: "The thanos-notif command line interface",
-}
-
-func init() {
-	app.Action = setupThanosListener
-	app.Flags = append(app.Flags, Flags()...)
-}
-
 func main() {
-	log.GetLogger().Info("Start the application")
+	app := &cli.App{
+		Name:  "thanos-notif",
+		Usage: "The thanos-notif command line interface",
+		Flags: Flags(),
+		Commands: []*cli.Command{
+			{
+				Name:    "listener",
+				Aliases: []string{},
+				Action:  startListener,
+			},
+		},
+	}
 	if err := app.Run(os.Args); err != nil {
 		log.GetLogger().Fatalw("Failed to start the application", "err", err)
 	}
 }
 
-func setupThanosListener(ctx *cli.Context) error {
+func startListener(ctx *cli.Context) error {
+	log.GetLogger().Info("Start the application")
+
 	config := &thanosnotif.Config{
 		L1Rpc:                  ctx.String(L1RpcUrlFlagName),
 		L1WsRpc:                ctx.String(L1WsRpcUrlFlagName),
