@@ -11,7 +11,7 @@ COPY ./ /thanos-events/
 WORKDIR /thanos-events
 
 RUN go mod tidy
-RUN env GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o thanos-app-notif ./cmd/thanosnotif/main.go
+RUN env GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o thanos-app-notif ./cmd/app/main.go
 
 FROM  alpine as certs
 RUN apk update && apk add ca-certificates
