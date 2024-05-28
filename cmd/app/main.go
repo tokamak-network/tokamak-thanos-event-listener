@@ -17,7 +17,7 @@ var app = &cli.App{
 
 func init() {
 	app.Action = setupThanosListener
-	app.Flags = append(app.Flags, thanosnotif.Flags()...)
+	app.Flags = append(app.Flags, Flags()...)
 }
 
 func main() {
@@ -29,18 +29,18 @@ func main() {
 
 func setupThanosListener(ctx *cli.Context) error {
 	config := &thanosnotif.Config{
-		L1Rpc:                  ctx.String(thanosnotif.L1RpcUrlFlagName),
-		L1WsRpc:                ctx.String(thanosnotif.L1WsRpcUrlFlagName),
-		L2Rpc:                  ctx.String(thanosnotif.L2RpcUrFlagName),
-		L2WsRpc:                ctx.String(thanosnotif.L2WsRpcUrFlagName),
-		L1StandBridge:          ctx.String(thanosnotif.L1StandardBridgeFlagName),
-		L2StandBridge:          ctx.String(thanosnotif.L2StandardBridgeFlagName),
-		L1CrossDomainMessenger: ctx.String(thanosnotif.L1CrossDomainMessengerFlagName),
-		L2CrossDomainMessenger: ctx.String(thanosnotif.L2CrossDomainMessengerFlagName),
-		L2ToL1MessagePasser:    ctx.String(thanosnotif.L2ToL1MessengerParserFlagName),
-		OptimismPortal:         ctx.String(thanosnotif.OptimismPortalFlagName),
-		SlackURL:               ctx.String(thanosnotif.SlackUrlFlagName),
-		TransferEventAddresses: ctx.StringSlice(thanosnotif.TransferAddressesFlagName),
+		L1Rpc:                  ctx.String(L1RpcUrlFlagName),
+		L1WsRpc:                ctx.String(L1WsRpcUrlFlagName),
+		L2Rpc:                  ctx.String(L2RpcUrFlagName),
+		L2WsRpc:                ctx.String(L2WsRpcUrFlagName),
+		L1StandBridge:          ctx.String(L1StandardBridgeFlagName),
+		L2StandBridge:          ctx.String(L2StandardBridgeFlagName),
+		L1CrossDomainMessenger: ctx.String(L1CrossDomainMessengerFlagName),
+		L2CrossDomainMessenger: ctx.String(L2CrossDomainMessengerFlagName),
+		L2ToL1MessagePasser:    ctx.String(L2ToL1MessengerParserFlagName),
+		OptimismPortal:         ctx.String(OptimismPortalFlagName),
+		SlackURL:               ctx.String(SlackUrlFlagName),
+		TransferEventAddresses: ctx.StringSlice(TransferAddressesFlagName),
 	}
 
 	log.GetLogger().Infow("Set up configuration", "config", config)

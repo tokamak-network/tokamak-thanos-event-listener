@@ -1,4 +1,4 @@
-package thanosnotif
+package main
 
 import (
 	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
