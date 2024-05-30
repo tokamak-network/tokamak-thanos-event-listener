@@ -1,4 +1,4 @@
-package main
+package flags
 
 import (
 	"github.com/ethereum-optimism/optimism/op-bindings/predeploys"
