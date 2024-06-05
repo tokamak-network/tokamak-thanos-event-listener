@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-app-notif
+spec:
+  template:
+    spec:
+      containers:
+        - name: thanos-app-notif
+          resources:
+            limits:
+              cpu: 1
+              memory: 1Gi
+          envFrom:
+            - configMapRef:
+                name: thanos-notif-app-config
