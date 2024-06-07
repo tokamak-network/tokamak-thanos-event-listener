@@ -47,12 +47,12 @@ var (
 	}
 	L1StandardBridgeFlag = &cli.StringFlag{
 		Name:    L1StandardBridgeFlagName,
-		Usage:   "L1StandBridge address",
+		Usage:   "L1StandardBridge address",
 		EnvVars: []string{"L1_STANDARD_BIRDGE"},
 	}
 	L2StandardBridgeFlag = &cli.StringFlag{
 		Name:    L2StandardBridgeFlagName,
-		Usage:   "L2StandBridge address",
+		Usage:   "L2StandardBridge address",
 		Value:   predeploys.L2StandardBridge,
 		EnvVars: []string{"L2_STANDARD_BIRDGE"},
 	}
