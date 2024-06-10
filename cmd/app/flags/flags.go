@@ -18,6 +18,7 @@ const (
 	OptimismPortalFlagName         = "optimism-portal-address"
 	SlackUrlFlagName               = "slack-url"
 	TransferAddressesFlagName      = "transfer-addresses"
+	OffFlagName                    = "slack-on-off"
 )
 
 var (
@@ -88,6 +89,11 @@ var (
 		Usage:   "List of transfer addresses to listen to",
 		EnvVars: []string{"TRANSFER_ADDRESSES"},
 	}
+	OffFlag = &cli.BoolFlag{
+		Name:    OffFlagName,
+		Usage:   "Slack active",
+		EnvVars: []string{"OFF"},
+	}
 )
 
 func Flags() []cli.Flag {
@@ -104,5 +110,6 @@ func Flags() []cli.Flag {
 		OptimismPortalFlag,
 		SlackUrlFlag,
 		TransferAddressesFlag,
+		OffFlag,
 	}
 }

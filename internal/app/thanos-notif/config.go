@@ -19,4 +19,6 @@ type Config struct {
 	SlackURL string
 
 	TransferEventAddresses []string
+
+	OFF bool
 }
