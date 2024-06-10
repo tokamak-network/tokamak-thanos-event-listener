@@ -5,7 +5,6 @@ import (
 
 	"github.com/tokamak-network/tokamak-thanos-event-listener/cmd/app/flags"
 	thanosnotif "github.com/tokamak-network/tokamak-thanos-event-listener/internal/app/thanos-notif"
-	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/notification"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 
 	"github.com/urfave/cli/v2"
@@ -51,13 +50,6 @@ func startListener(ctx *cli.Context) error {
 	log.GetLogger().Infow("Set up configuration", "config", config)
 
 	app := thanosnotif.New(config)
-
-	// Slack로 Hello World 메시지 보내기
-	slackNotifSrv := notification.MakeSlackNotificationService(config.SlackURL, 5)
-	err := slackNotifSrv.Notify("HelloHelloHelloHelloHelloHello", "WorldWorldWorldWorldWorld")
-	if err != nil {
-		log.GetLogger().Errorw("Failed to send message to Slack", "err", err)
-	}
 
 	return app.Start()
 }
