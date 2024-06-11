@@ -12,8 +12,10 @@ import (
 )
 
 type SlackData struct {
-	Title string `json:"title"`
-	Text  string `json:"text"`
+	Attachments []struct {
+		Title string `json:"title"`
+		Text  string `json:"text"`
+	} `json:"attachments"`
 }
 
 type SlackNotificationService struct {
@@ -43,7 +45,15 @@ func (slackNotificationService *SlackNotificationService) Notify(title string, t
 		return nil
 	}
 
-	data := &SlackData{Title: title, Text: text}
+	// data := &SlackData{Title: title, Text: text}
+	data := &SlackData{
+		Attachments: []struct {
+			Title string `json:"title"`
+			Text  string `json:"text"`
+		}{
+			{Title: title, Text: text},
+		},
+	}
 
 	payload, err := json.Marshal(data)
 	if err != nil {
