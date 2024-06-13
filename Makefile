@@ -13,7 +13,7 @@ run: $(TARGET)
 	$<
 
 $(TARGET): $(SOURCE_FILES)
-	go build -o $@ ./cmd/thanosnotif/main.go
+	go build -o $@ ./cmd/app/main.go
 	@echo "Done building"
 
 image:
