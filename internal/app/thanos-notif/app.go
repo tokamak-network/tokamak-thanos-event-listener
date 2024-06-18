@@ -21,7 +21,6 @@ type Notifier interface {
 }
 
 const (
-	TransferEventABI                 = "Transfer(address,address,uint256)"
 	ETHDepositInitiatedEventABI      = "ETHDepositInitiated(address,address,uint256,bytes)"
 	ETHWithdrawalFinalizedEventABI   = "ETHWithdrawalFinalized(address,address,uint256,bytes)"
 	ERC20DepositInitiatedEventABI    = "ERC20DepositInitiated(address,address,address,address,uint256,bytes)"
@@ -33,43 +32,6 @@ const (
 type App struct {
 	cfg      *Config
 	notifier Notifier
-}
-
-func (app *App) ERC20TransferEvent(vLog *types.Log) {
-	log.GetLogger().Infow("Got ERC20 Transfer Event", "event", vLog)
-
-	var decimals int
-	var tokenSymbol string
-
-	switch vLog.Address {
-	case common.HexToAddress("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"):
-		decimals = 6
-		tokenSymbol = "USDC"
-	case common.HexToAddress("0xa30fe40285b8f5c0457dbc3b7c8a280373c40044"):
-		decimals = 18
-		tokenSymbol = "TON"
-	default:
-		decimals = 18
-		tokenSymbol = "ETH"
-	}
-
-	txHash := vLog.TxHash
-	From := common.HexToAddress(vLog.Topics[1].Hex())
-	To := common.HexToAddress(vLog.Topics[2].Hex())
-
-	// Transfer Amount
-	value := new(big.Int).SetBytes(vLog.Data)
-	decimalFactor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
-	amountFloat := new(big.Float).SetInt(value)
-	amountFloat.Quo(amountFloat, new(big.Float).SetInt(decimalFactor))
-
-	Amount := strings.TrimRight(strings.TrimRight(amountFloat.Text('f', decimals+1), "0"), ".")
-
-	// Slack Notify title and text
-	title := "[ERC-20 Transfer Event]"
-	text := fmt.Sprintf("Tx: https://explorer.thanos-sepolia-nightly.tokamak.network/tx/%s\nFrom: https://explorer.thanos-sepolia-nightly.tokamak.network/address/%s\nTo: https://eth-sepolia.blockscout.com/address/%s\nAmount: %+v %+v", txHash, From, To, Amount, tokenSymbol)
-
-	app.notifier.Notify(title, text)
 }
 
 func (app *App) ETHDepAndWithEvent(vLog *types.Log) {
@@ -235,11 +197,6 @@ func (app *App) Start() error {
 
 	l2BridgeWithdrawalRequest := listener.MakeEventRequest(app.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, app.L2DepAndWithEvent)
 	service.AddSubscribeRequest(l2BridgeWithdrawalRequest)
-
-	for _, transferEventAddress := range app.cfg.TransferEventAddresses {
-		depositRelayedRequest := listener.MakeEventRequest(transferEventAddress, TransferEventABI, app.ERC20TransferEvent)
-		service.AddSubscribeRequest(depositRelayedRequest)
-	}
 
 	err := service.Start()
 	if err != nil {

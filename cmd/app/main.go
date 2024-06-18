@@ -43,7 +43,6 @@ func startListener(ctx *cli.Context) error {
 		L2ToL1MessagePasser:    ctx.String(flags.L2ToL1MessengerPasserFlagName),
 		OptimismPortal:         ctx.String(flags.OptimismPortalFlagName),
 		SlackURL:               ctx.String(flags.SlackUrlFlagName),
-		TransferEventAddresses: ctx.StringSlice(flags.TransferAddressesFlagName),
 		OFF:                    ctx.Bool(flags.OffFlagName),
 	}
 

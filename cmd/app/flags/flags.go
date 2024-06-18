@@ -17,7 +17,6 @@ const (
 	L2ToL1MessengerPasserFlagName  = "l2-to-l1-message-parser-address"
 	OptimismPortalFlagName         = "optimism-portal-address"
 	SlackUrlFlagName               = "slack-url"
-	TransferAddressesFlagName      = "transfer-addresses"
 	OffFlagName                    = "slack-on-off"
 )
 
@@ -84,11 +83,6 @@ var (
 		Usage:   "slack url for notification",
 		EnvVars: []string{"SLACK_URL"},
 	}
-	TransferAddressesFlag = &cli.StringSliceFlag{
-		Name:    TransferAddressesFlagName,
-		Usage:   "List of transfer addresses to listen to",
-		EnvVars: []string{"TRANSFER_ADDRESSES"},
-	}
 	OffFlag = &cli.BoolFlag{
 		Name:    OffFlagName,
 		Usage:   "Slack active",
@@ -109,7 +103,6 @@ func Flags() []cli.Flag {
 		L2ToL1MessagePasserFlag,
 		OptimismPortalFlag,
 		SlackUrlFlag,
-		TransferAddressesFlag,
 		OffFlag,
 	}
 }
