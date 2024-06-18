@@ -1,6 +1,8 @@
 package thanosnotif
 
 type Config struct {
+	Network string
+
 	L1Rpc   string
 	L1WsRpc string
 

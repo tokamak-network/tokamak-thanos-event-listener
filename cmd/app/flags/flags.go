@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	NetworkFlagName                = "network"
 	L1RpcUrlFlagName               = "l1-rpc"
 	L1WsRpcUrlFlagName             = "l1-ws-rpc"
 	L2RpcUrlFlagName               = "l2-rpc"
@@ -21,6 +22,11 @@ const (
 )
 
 var (
+	NetworkFlag = &cli.StringFlag{
+		Name:    NetworkFlagName,
+		Usage:   "Network name",
+		EnvVars: []string{"NETWORK"},
+	}
 	L1RPCFlag = &cli.StringFlag{
 		Name:    L1RpcUrlFlagName,
 		Usage:   "L1 RPC url",
@@ -92,6 +98,7 @@ var (
 
 func Flags() []cli.Flag {
 	return []cli.Flag{
+		NetworkFlag,
 		L1RPCFlag,
 		L1WsRpcFlag,
 		L2RPCFlag,

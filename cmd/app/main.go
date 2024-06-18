@@ -32,6 +32,7 @@ func startListener(ctx *cli.Context) error {
 	log.GetLogger().Info("Start the application")
 
 	config := &thanosnotif.Config{
+		Network:                ctx.String(flags.NetworkFlagName),
 		L1Rpc:                  ctx.String(flags.L1RpcUrlFlagName),
 		L1WsRpc:                ctx.String(flags.L1WsRpcUrlFlagName),
 		L2Rpc:                  ctx.String(flags.L2RpcUrlFlagName),
