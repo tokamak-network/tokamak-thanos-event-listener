@@ -12,12 +12,6 @@ type Config struct {
 	L1StandardBridge string
 	L2StandardBridge string
 
-	L1CrossDomainMessenger string
-	L2CrossDomainMessenger string
-
-	L2ToL1MessagePasser string
-	OptimismPortal      string
-
 	SlackURL string
 
 	L1ExplorerUrl string

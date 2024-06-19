@@ -6,21 +6,17 @@ import (
 )
 
 const (
-	NetworkFlagName                = "network"
-	L1RpcUrlFlagName               = "l1-rpc"
-	L1WsRpcUrlFlagName             = "l1-ws-rpc"
-	L2RpcUrlFlagName               = "l2-rpc"
-	L2WsRpcUrlFlagName             = "l2-ws-rpc"
-	L1StandardBridgeFlagName       = "l1-standard-bridge-address"
-	L2StandardBridgeFlagName       = "l2-standard-bridge-address"
-	L1CrossDomainMessengerFlagName = "l1-cross-domain-messenger-address"
-	L2CrossDomainMessengerFlagName = "l2-cross-domain-messenger-address"
-	L2ToL1MessengerPasserFlagName  = "l2-to-l1-message-parser-address"
-	OptimismPortalFlagName         = "optimism-portal-address"
-	SlackUrlFlagName               = "slack-url"
-	L1ExplorerUrlFlagName          = "l1-explorer-url"
-	L2ExplorerUrlFlagName          = "l2-explorer-url"
-	OffFlagName                    = "slack-on-off"
+	NetworkFlagName          = "network"
+	L1RpcUrlFlagName         = "l1-rpc"
+	L1WsRpcUrlFlagName       = "l1-ws-rpc"
+	L2RpcUrlFlagName         = "l2-rpc"
+	L2WsRpcUrlFlagName       = "l2-ws-rpc"
+	L1StandardBridgeFlagName = "l1-standard-bridge-address"
+	L2StandardBridgeFlagName = "l2-standard-bridge-address"
+	SlackUrlFlagName         = "slack-url"
+	L1ExplorerUrlFlagName    = "l1-explorer-url"
+	L2ExplorerUrlFlagName    = "l2-explorer-url"
+	OffFlagName              = "slack-on-off"
 )
 
 var (
@@ -64,28 +60,6 @@ var (
 		Value:   predeploys.L2StandardBridge,
 		EnvVars: []string{"L2_STANDARD_BIRDGE"},
 	}
-	L1CrossDomainMessengerFlag = &cli.StringFlag{
-		Name:    L1CrossDomainMessengerFlagName,
-		Usage:   "L1CrossDomainMessenger address",
-		EnvVars: []string{"L1_CROSS_DOMAIN_MESSENGER"},
-	}
-	L2CrossDomainMessengerFlag = &cli.StringFlag{
-		Name:    L2CrossDomainMessengerFlagName,
-		Usage:   "L2CrossDomainMessenger address",
-		Value:   predeploys.L2CrossDomainMessenger,
-		EnvVars: []string{"L2_CROSS_DOMAIN_MESSENGER"},
-	}
-	L2ToL1MessagePasserFlag = &cli.StringFlag{
-		Name:    L2ToL1MessengerPasserFlagName,
-		Usage:   "L2ToL1MessagePasser address",
-		Value:   predeploys.L2ToL1MessagePasser,
-		EnvVars: []string{"L2_TO_L1_MESSAGE_PASSER"},
-	}
-	OptimismPortalFlag = &cli.StringFlag{
-		Name:    OptimismPortalFlagName,
-		Usage:   "OptimismPortal address",
-		EnvVars: []string{"OPTIMISM_PORTAL"},
-	}
 	SlackUrlFlag = &cli.StringFlag{
 		Name:    SlackUrlFlagName,
 		Usage:   "slack url for notification",
@@ -117,10 +91,6 @@ func Flags() []cli.Flag {
 		L2WsRpcFlag,
 		L1StandardBridgeFlag,
 		L2StandardBridgeFlag,
-		L1CrossDomainMessengerFlag,
-		L2CrossDomainMessengerFlag,
-		L2ToL1MessagePasserFlag,
-		OptimismPortalFlag,
 		SlackUrlFlag,
 		L1ExplorerUrlFlag,
 		L2ExplorerUrlFlag,
