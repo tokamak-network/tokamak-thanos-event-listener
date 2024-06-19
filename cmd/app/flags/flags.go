@@ -18,6 +18,8 @@ const (
 	L2ToL1MessengerPasserFlagName  = "l2-to-l1-message-parser-address"
 	OptimismPortalFlagName         = "optimism-portal-address"
 	SlackUrlFlagName               = "slack-url"
+	L1ExplorerUrlFlagName          = "l1-expolorer-url"
+	L2ExplorerUrlFlagName          = "l2-expolorer-url"
 	OffFlagName                    = "slack-on-off"
 )
 
@@ -89,6 +91,16 @@ var (
 		Usage:   "slack url for notification",
 		EnvVars: []string{"SLACK_URL"},
 	}
+	L1ExplorerUrlFlag = &cli.StringFlag{
+		Name:    L1ExplorerUrlFlagName,
+		Usage:   "L1 explorer url",
+		EnvVars: []string{"L1_EXPLORER_URL"},
+	}
+	L2ExplorerUrlFlag = &cli.StringFlag{
+		Name:    L2ExplorerUrlFlagName,
+		Usage:   "L2 explorer url",
+		EnvVars: []string{"L2_EXPLORER_URL"},
+	}
 	OffFlag = &cli.BoolFlag{
 		Name:    OffFlagName,
 		Usage:   "Slack active",
@@ -110,6 +122,8 @@ func Flags() []cli.Flag {
 		L2ToL1MessagePasserFlag,
 		OptimismPortalFlag,
 		SlackUrlFlag,
+		L1ExplorerUrlFlag,
+		L2ExplorerUrlFlag,
 		OffFlag,
 	}
 }

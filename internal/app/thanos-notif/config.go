@@ -20,5 +20,8 @@ type Config struct {
 
 	SlackURL string
 
+	L1ExplorerUrl string
+	L2ExplorerUrl string
+
 	OFF bool
 }
