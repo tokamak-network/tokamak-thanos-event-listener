@@ -29,6 +29,13 @@ const (
 	WithdrawalInitiatedEventABI      = "WithdrawalInitiated(address,address,address,address,uint256,bytes)"
 )
 
+const (
+	usdcSepolia = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+	usdcMainnet = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+	tonSepolia  = "0xa30fe40285b8f5c0457dbc3b7c8a280373c40044"
+	tonMainnet  = "0x2be5e8c109e2197D077D13A82dAead6a9b3433C5"
+)
+
 type App struct {
 	cfg      *Config
 	notifier Notifier
@@ -56,10 +63,10 @@ func (app *App) ETHDepAndWithEvent(vLog *types.Log) {
 	var text string
 
 	if common.HexToAddress(vLog.Topics[0].Hex()) == common.HexToAddress("0x35d79ab81f2b2017e19afb5c5571778877782d7a8786f5907f93b0f4702f4f23") {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Initialized]")
+		title = fmt.Sprintf("[" + app.cfg.Network + "][ETH Deposit Initialized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, FromTo, FromTo, Amount)
 	} else if common.HexToAddress(vLog.Topics[0].Hex()) == common.HexToAddress("0x2ac69ee804d9a7a0984249f508dfab7cb2534b465b6ce1580f99a38ba9c5e631") {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Finalized]")
+		title = fmt.Sprintf("[" + app.cfg.Network + "][ETH Withdrawal Finalized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, FromTo, FromTo, Amount)
 	} else {
 		title = "Unknown Event"
@@ -74,14 +81,15 @@ func (app *App) ERC20DepAndWithEvent(vLog *types.Log) {
 	var decimals int
 	var tokenSymbol string
 
-	switch common.HexToAddress(vLog.Topics[1].Hex()) {
-	case common.HexToAddress("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"):
+	tokenAddress := common.HexToAddress(vLog.Topics[1].Hex())
+
+	if tokenAddress == common.HexToAddress(usdcSepolia) || tokenAddress == common.HexToAddress(usdcMainnet) {
 		decimals = 6
 		tokenSymbol = "USDC"
-	case common.HexToAddress("0xa30fe40285b8f5c0457dbc3b7c8a280373c40044"):
+	} else if tokenAddress == common.HexToAddress(tonSepolia) || tokenAddress == common.HexToAddress(tonMainnet) {
 		decimals = 18
 		tokenSymbol = "TON"
-	default:
+	} else {
 		decimals = 18
 		tokenSymbol = "ETH"
 	}
@@ -106,10 +114,10 @@ func (app *App) ERC20DepAndWithEvent(vLog *types.Log) {
 	var text string
 
 	if common.HexToAddress(vLog.Topics[0].Hex()) == common.HexToAddress("0x718594027abd4eaed59f95162563e0cc6d0e8d5b86b1c7be8b1b0ac3343d0396") {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
+		title = fmt.Sprintf("[" + app.cfg.Network + "][ERC-20 Deposit Initialized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v %+v", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
 	} else if common.HexToAddress(vLog.Topics[0].Hex()) == common.HexToAddress("0x3ceee06c1e37648fcbb6ed52e17b3e1f275a1f8c7b22a84b2b84732431e046b3") {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
+		title = fmt.Sprintf("[" + app.cfg.Network + "][ERC-20 Withdrawal Finalized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v %+v", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
 	} else {
 		title = "Unknown Event"
@@ -124,14 +132,15 @@ func (app *App) L2DepAndWithEvent(vLog *types.Log) {
 	var decimals int
 	var tokenSymbol string
 
-	switch common.HexToAddress(vLog.Topics[1].Hex()) {
-	case common.HexToAddress("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"):
+	tokenAddress := common.HexToAddress(vLog.Topics[1].Hex())
+
+	if tokenAddress == common.HexToAddress(usdcSepolia) || tokenAddress == common.HexToAddress(usdcMainnet) {
 		decimals = 6
 		tokenSymbol = "USDC"
-	case common.HexToAddress("0xa30fe40285b8f5c0457dbc3b7c8a280373c40044"):
+	} else if tokenAddress == common.HexToAddress(tonSepolia) || tokenAddress == common.HexToAddress(tonMainnet) {
 		decimals = 18
 		tokenSymbol = "TON"
-	default:
+	} else {
 		decimals = 18
 		tokenSymbol = "ETH"
 	}
@@ -156,18 +165,18 @@ func (app *App) L2DepAndWithEvent(vLog *types.Log) {
 
 	if common.HexToAddress(vLog.Topics[0].Hex()) == common.HexToAddress("0xb0444523268717a02698be47d0803aa7468c00acbed2f8bd93a0459cde61dd89") {
 		if common.HexToAddress(vLog.Topics[1].Hex()) == common.HexToAddress("0x0000000000000000000000000000000000000000") {
-			title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Finalized]")
+			title = fmt.Sprintf("[" + app.cfg.Network + "][ETH Deposit Finalized]")
 			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v %+v", txHash, FromTo, FromTo, l2TokenAddress, Amount, tokenSymbol)
 		} else {
-			title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
+			title = fmt.Sprintf("[" + app.cfg.Network + "][ERC-20 Deposit Finalized]")
 			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v %+v", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
 		}
 	} else if common.HexToAddress(vLog.Topics[0].Hex()) == common.HexToAddress("0x73d170910aba9e6d50b102db522b1dbcd796216f5128b445aa2135272886497e") {
 		if common.HexToAddress(vLog.Topics[1].Hex()) == common.HexToAddress("0x0000000000000000000000000000000000000000") {
-			title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Initialized]")
+			title = fmt.Sprintf("[" + app.cfg.Network + "][ETH Withdrawal Initialized]")
 			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v %+v", txHash, FromTo, FromTo, l2TokenAddress, Amount, tokenSymbol)
 		} else {
-			title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
+			title = fmt.Sprintf("[" + app.cfg.Network + "][ERC-20 Withdrawal Initialized]")
 			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v %+v", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
 		}
 	}
