@@ -18,8 +18,8 @@ const (
 	L2ToL1MessengerPasserFlagName  = "l2-to-l1-message-parser-address"
 	OptimismPortalFlagName         = "optimism-portal-address"
 	SlackUrlFlagName               = "slack-url"
-	L1ExplorerUrlFlagName          = "l1-expolorer-url"
-	L2ExplorerUrlFlagName          = "l2-expolorer-url"
+	L1ExplorerUrlFlagName          = "l1-explorer-url"
+	L2ExplorerUrlFlagName          = "l2-explorer-url"
 	OffFlagName                    = "slack-on-off"
 )
 
@@ -29,7 +29,7 @@ var (
 		Usage:   "Network name",
 		EnvVars: []string{"NETWORK"},
 	}
-	L1RPCFlag = &cli.StringFlag{
+	L1RpcFlag = &cli.StringFlag{
 		Name:    L1RpcUrlFlagName,
 		Usage:   "L1 RPC url",
 		Value:   "http://localhost:8545",
@@ -47,7 +47,7 @@ var (
 		Value:   "http://localhost:9545",
 		EnvVars: []string{"L2_RPC"},
 	}
-	L2WsRPCFlag = &cli.StringFlag{
+	L2WsRpcFlag = &cli.StringFlag{
 		Name:    L2WsRpcUrlFlagName,
 		Usage:   "L2 Ws RPC url",
 		Value:   "ws://localhost:9546",
@@ -111,10 +111,10 @@ var (
 func Flags() []cli.Flag {
 	return []cli.Flag{
 		NetworkFlag,
-		L1RPCFlag,
+		L1RpcFlag,
 		L1WsRpcFlag,
 		L2RPCFlag,
-		L2WsRPCFlag,
+		L2WsRpcFlag,
 		L1StandardBridgeFlag,
 		L2StandardBridgeFlag,
 		L1CrossDomainMessengerFlag,
