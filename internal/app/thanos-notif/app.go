@@ -11,6 +11,7 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/listener"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/notification"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
+	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindings/l1StandardBridge.go"
 )
 
 type Notifier interface {
@@ -21,6 +22,7 @@ type Notifier interface {
 }
 
 const (
+	bindings.
 	ETHDepositInitiatedEventABI      = "ETHDepositInitiated(address,address,uint256,bytes)"
 	ETHWithdrawalFinalizedEventABI   = "ETHWithdrawalFinalized(address,address,uint256,bytes)"
 	ERC20DepositInitiatedEventABI    = "ERC20DepositInitiated(address,address,address,address,uint256,bytes)"
@@ -42,10 +44,22 @@ type App struct {
 }
 
 func (app *App) ETHDepAndWithEvent(vLog *types.Log) {
-	log.GetLogger().Infow("Got ETH Deposit or Withdrawal Event", vLog)
+	log.GetLogger().Infow("Got ETH Deposit or Withdrawal Event", "event", vLog)
+
+	// check the length vLog.Topics and vLog.Data
+	if len(vLog.Topics) > 3 {
+		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.")
+		return
+	}
+
+	if len(vLog.Data) < 32 {
+		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.")
+		return
+	}
 
 	txHash := vLog.TxHash
-	FromTo := common.HexToAddress(vLog.Topics[1].Hex())
+	From := common.HexToAddress(vLog.Topics[1].Hex())
+	To := common.HexToAddress(vLog.Topics[2].Hex())
 
 	// ETH deposit and withdrawal Amount
 	amountData := vLog.Data[:32]
@@ -64,10 +78,10 @@ func (app *App) ETHDepAndWithEvent(vLog *types.Log) {
 
 	if common.HexToAddress(vLog.Topics[0].Hex()) == common.HexToAddress("0x35d79ab81f2b2017e19afb5c5571778877782d7a8786f5907f93b0f4702f4f23") {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Initialized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, FromTo, FromTo, Amount)
+		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, From, To, Amount)
 	} else if common.HexToAddress(vLog.Topics[0].Hex()) == common.HexToAddress("0x2ac69ee804d9a7a0984249f508dfab7cb2534b465b6ce1580f99a38ba9c5e631") {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Finalized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, FromTo, FromTo, Amount)
+		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, From, To, Amount)
 	} else {
 		title = "Unknown Event"
 	}
@@ -76,7 +90,18 @@ func (app *App) ETHDepAndWithEvent(vLog *types.Log) {
 }
 
 func (app *App) ERC20DepAndWithEvent(vLog *types.Log) {
-	log.GetLogger().Infow("event", vLog)
+	log.GetLogger().Infow("Got ERC20 Deposit or Withdrawal Event", "event", vLog)
+
+	// check the length vLog.Topics and vLog.Data
+	if len(vLog.Topics) > 4 {
+		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.")
+		return
+	}
+
+	if len(vLog.Data) < 64 {
+		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.")
+		return
+	}
 
 	var decimals int
 	var tokenSymbol string
@@ -127,7 +152,18 @@ func (app *App) ERC20DepAndWithEvent(vLog *types.Log) {
 }
 
 func (app *App) L2DepAndWithEvent(vLog *types.Log) {
-	log.GetLogger().Infow("event", vLog)
+	log.GetLogger().Infow("Got L2 Deposit or Withdrawal Event", "event", vLog)
+
+	// check the length vLog.Topics and vLog.Data
+	if len(vLog.Topics) > 4 {
+		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.")
+		return
+	}
+
+	if len(vLog.Data) < 64 {
+		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.")
+		return
+	}
 
 	var decimals int
 	var tokenSymbol string
