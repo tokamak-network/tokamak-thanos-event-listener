@@ -11,7 +11,6 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/listener"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/notification"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
-	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindings/l1StandardBridge.go"
 )
 
 type Notifier interface {
@@ -22,7 +21,6 @@ type Notifier interface {
 }
 
 const (
-	bindings.
 	ETHDepositInitiatedEventABI      = "ETHDepositInitiated(address,address,uint256,bytes)"
 	ETHWithdrawalFinalizedEventABI   = "ETHWithdrawalFinalized(address,address,uint256,bytes)"
 	ERC20DepositInitiatedEventABI    = "ERC20DepositInitiated(address,address,address,address,uint256,bytes)"
