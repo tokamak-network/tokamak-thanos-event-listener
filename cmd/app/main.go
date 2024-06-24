@@ -43,6 +43,7 @@ func startListener(ctx *cli.Context) error {
 		L1ExplorerUrl:    ctx.String(flags.L1ExplorerUrlFlagName),
 		L2ExplorerUrl:    ctx.String(flags.L2ExplorerUrlFlagName),
 		OFF:              ctx.Bool(flags.OffFlagName),
+		TokenAddresses:   ctx.StringSlice(flags.TokenAddressesFlagName),
 	}
 
 	log.GetLogger().Infow("Set up configuration", "config", config)

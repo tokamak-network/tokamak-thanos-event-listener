@@ -18,4 +18,6 @@ type Config struct {
 	L2ExplorerUrl string
 
 	OFF bool
+
+	TokenAddresses []string
 }
