@@ -216,7 +216,6 @@ func (app *App) updateTokenInfo() error {
 }
 
 func (app *App) Start() error {
-
 	err := app.updateTokenInfo()
 	if err != nil {
 		log.GetLogger().Errorw("Failed to update token info", "err", err)
