@@ -220,13 +220,6 @@ func (app *App) updateTokenInfo() error {
 }
 
 func (app *App) Start() error {
-
-	err := app.updateTokenInfo()
-	if err != nil {
-		log.GetLogger().Errorw("Failed to update token info", "err", err)
-		return err
-	}
-
 	service := listener.MakeService(app.cfg.L1WsRpc)
 
 	// L1StandardBridge ETH deposit and withdrawal
@@ -250,6 +243,12 @@ func (app *App) Start() error {
 	l2BridgeWithdrawalRequest := listener.MakeEventRequest(app.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, app.L2DepAndWithEvent)
 	service.AddSubscribeRequest(l2BridgeWithdrawalRequest)
 
+	err := app.updateTokenInfo()
+	if err != nil {
+		log.GetLogger().Errorw("Failed to update token info", "err", err)
+		return err
+	}
+
 	err = service.Start()
 	if err != nil {
 		log.GetLogger().Errorw("Failed to start service", "err", err)
@@ -265,11 +264,6 @@ func New(config *Config) *App {
 		cfg:       config,
 		notifier:  slackNotifSrv,
 		tokenInfo: make(map[string]TokenInfo),
-	}
-
-	err := app.updateTokenInfo()
-	if err != nil {
-		log.GetLogger().Fatalw("Failed to get token info", "error", err)
 	}
 
 	return app
