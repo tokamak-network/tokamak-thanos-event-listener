@@ -56,13 +56,13 @@ func (app *App) ETHDepAndWithEvent(vLog *types.Log) {
 	// ETH deposit and withdrawal Amount
 	amountData := vLog.Data[:32]
 
-	decimals := 18
+	tokenDecimals := 18
 	value := new(big.Int).SetBytes(amountData)
-	decimalFactor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
+	decimalFactor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(tokenDecimals)), nil)
 	amountFloat := new(big.Float).SetInt(value)
 	amountFloat.Quo(amountFloat, new(big.Float).SetInt(decimalFactor))
 
-	Amount := strings.TrimRight(strings.TrimRight(amountFloat.Text('f', decimals+1), "0"), ".")
+	Amount := strings.TrimRight(strings.TrimRight(amountFloat.Text('f', tokenDecimals+1), "0"), ".")
 
 	// Slack notify title and text
 	var title string
@@ -180,7 +180,7 @@ func (app *App) L2DepAndWithEvent(vLog *types.Log) {
 	amountFloat := new(big.Float).SetInt(value)
 	amountFloat.Quo(amountFloat, new(big.Float).SetInt(decimalFactor))
 
-	Amount := strings.TrimRight(strings.TrimRight(amountFloat.Text('f', int(tokenDecimals)+1), "0"), ".")
+	Amount := strings.TrimRight(strings.TrimRight(amountFloat.Text('f', tokenDecimals+1), "0"), ".")
 
 	var title string
 	var text string
