@@ -29,6 +29,15 @@ const (
 	WithdrawalInitiatedEventABI      = "WithdrawalInitiated(address,address,address,address,uint256,bytes)"
 )
 
+const (
+	EthDepositTopic    = "0x35d79ab81f2b2017e19afb5c5571778877782d7a8786f5907f93b0f4702f4f23"
+	EthWithdrawTopic   = "0x2ac69ee804d9a7a0984249f508dfab7cb2534b465b6ce1580f99a38ba9c5e631"
+	ERC20DepositTopic  = "0x718594027abd4eaed59f95162563e0cc6d0e8d5b86b1c7be8b1b0ac3343d0396"
+	ERC20WithdrawTopic = "0x3ceee06c1e37648fcbb6ed52e17b3e1f275a1f8c7b22a84b2b84732431e046b3"
+	L2DepositTopic     = "0xb0444523268717a02698be47d0803aa7468c00acbed2f8bd93a0459cde61dd89"
+	L2WithdrawTopic    = "0x73d170910aba9e6d50b102db522b1dbcd796216f5128b445aa2135272886497e"
+)
+
 type App struct {
 	cfg       *Config
 	notifier  Notifier
@@ -40,12 +49,12 @@ func (app *App) ETHDepAndWithEvent(vLog *types.Log) {
 
 	// check the length vLog.Topics and vLog.Data
 	if len(vLog.Topics) > 3 {
-		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.")
+		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.", "actual", len(vLog.Topics))
 		return
 	}
 
 	if len(vLog.Data) < 32 {
-		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.")
+		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.", "actual", len(vLog.Data))
 		return
 	}
 
@@ -69,10 +78,10 @@ func (app *App) ETHDepAndWithEvent(vLog *types.Log) {
 	var text string
 
 	eventTopic := common.HexToAddress(vLog.Topics[0].Hex())
-	if eventTopic.Cmp(common.HexToAddress("0x35d79ab81f2b2017e19afb5c5571778877782d7a8786f5907f93b0f4702f4f23")) == 0 {
+	if eventTopic.Cmp(common.HexToAddress(EthDepositTopic)) == 0 {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Initialized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, From, To, Amount)
-	} else if eventTopic.Cmp(common.HexToAddress("0x2ac69ee804d9a7a0984249f508dfab7cb2534b465b6ce1580f99a38ba9c5e631")) == 0 {
+	} else if eventTopic.Cmp(common.HexToAddress(EthWithdrawTopic)) == 0 {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Finalized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, From, To, Amount)
 	} else {
@@ -87,12 +96,12 @@ func (app *App) ERC20DepAndWithEvent(vLog *types.Log) {
 
 	// check the length vLog.Topics and vLog.Data
 	if len(vLog.Topics) > 4 {
-		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.")
+		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.", "actual", len(vLog.Topics))
 		return
 	}
 
 	if len(vLog.Data) < 64 {
-		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.")
+		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.", "actual", len(vLog.Data))
 		return
 	}
 
@@ -128,10 +137,10 @@ func (app *App) ERC20DepAndWithEvent(vLog *types.Log) {
 	var text string
 
 	eventTopic := common.HexToAddress(vLog.Topics[0].Hex())
-	if eventTopic.Cmp(common.HexToAddress("0x718594027abd4eaed59f95162563e0cc6d0e8d5b86b1c7be8b1b0ac3343d0396")) == 0 {
+	if eventTopic.Cmp(common.HexToAddress(ERC20DepositTopic)) == 0 {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
-	} else if eventTopic.Cmp(common.HexToAddress("0x3ceee06c1e37648fcbb6ed52e17b3e1f275a1f8c7b22a84b2b84732431e046b3")) == 0 {
+	} else if eventTopic.Cmp(common.HexToAddress(ERC20WithdrawTopic)) == 0 {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
 	} else {
@@ -146,12 +155,12 @@ func (app *App) L2DepAndWithEvent(vLog *types.Log) {
 
 	// check the length vLog.Topics and vLog.Data
 	if len(vLog.Topics) > 4 {
-		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.")
+		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.", "actual", len(vLog.Topics))
 		return
 	}
 
 	if len(vLog.Data) < 64 {
-		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.")
+		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.", "actual", len(vLog.Data))
 		return
 	}
 
@@ -187,7 +196,7 @@ func (app *App) L2DepAndWithEvent(vLog *types.Log) {
 
 	eventTopic := common.HexToAddress(vLog.Topics[0].Hex())
 	tokenTopic := common.HexToAddress(vLog.Topics[1].Hex())
-	if eventTopic.Cmp(common.HexToAddress("0xb0444523268717a02698be47d0803aa7468c00acbed2f8bd93a0459cde61dd89")) == 0 {
+	if eventTopic.Cmp(common.HexToAddress(L2DepositTopic)) == 0 {
 		if tokenTopic.Cmp(common.HexToAddress("0x0000000000000000000000000000000000000000")) == 0 {
 			title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Finalized]")
 			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l2TokenAddress, Amount, tokenSymbol)
@@ -195,7 +204,7 @@ func (app *App) L2DepAndWithEvent(vLog *types.Log) {
 			title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
 			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
 		}
-	} else if eventTopic.Cmp(common.HexToAddress("0x73d170910aba9e6d50b102db522b1dbcd796216f5128b445aa2135272886497e")) == 0 {
+	} else if eventTopic.Cmp(common.HexToAddress(L2WithdrawTopic)) == 0 {
 		if tokenTopic.Cmp(common.HexToAddress("0x0000000000000000000000000000000000000000")) == 0 {
 			title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Initialized]")
 			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l2TokenAddress, Amount, tokenSymbol)
