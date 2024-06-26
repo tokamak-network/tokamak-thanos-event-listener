@@ -28,9 +28,15 @@ type TokenInfo struct {
 
 func (data *Data) tokenInfoMap() (map[string]TokenInfo, error) {
 	tokenInfoMap := make(map[string]TokenInfo)
+	checkAddresses := make(map[string]struct{})
 
-	for _, addr := range data.cfg.TokenAddresses {
-		tokenAddress := strings.Trim(addr, "[]")
+	for _, tokenAddress := range data.cfg.TokenAddresses {
+		if _, exists := checkAddresses[tokenAddress]; exists {
+			continue
+		}
+
+		checkAddresses[tokenAddress] = struct{}{}
+
 		symbol, decimals, err := data.getTokenInfo(tokenAddress)
 		if err != nil {
 			return nil, err
@@ -41,6 +47,8 @@ func (data *Data) tokenInfoMap() (map[string]TokenInfo, error) {
 			Symbol:   symbol,
 			Decimals: decimals,
 		}
+
+		fmt.Printf("Token Address: %s, Symbol: %s, Decimals: %d\n", tokenAddress, symbol, decimals)
 	}
 
 	return tokenInfoMap, nil
