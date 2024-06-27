@@ -2,9 +2,8 @@ package thanosnotif
 
 import (
 	"fmt"
-	"math/big"
-	"strings"
 
+	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -12,13 +11,6 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/notification"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
-
-type Notifier interface {
-	NotifyWithReTry(title string, text string)
-	Notify(title string, text string) error
-	Enable()
-	Disable()
-}
 
 const (
 	ETHDepositInitiatedEventABI      = "ETHDepositInitiated(address,address,uint256,bytes)"
@@ -29,14 +21,12 @@ const (
 	WithdrawalInitiatedEventABI      = "WithdrawalInitiated(address,address,address,address,uint256,bytes)"
 )
 
-const (
-	EthDepositTopic    = "0x35d79ab81f2b2017e19afb5c5571778877782d7a8786f5907f93b0f4702f4f23"
-	EthWithdrawTopic   = "0x2ac69ee804d9a7a0984249f508dfab7cb2534b465b6ce1580f99a38ba9c5e631"
-	ERC20DepositTopic  = "0x718594027abd4eaed59f95162563e0cc6d0e8d5b86b1c7be8b1b0ac3343d0396"
-	ERC20WithdrawTopic = "0x3ceee06c1e37648fcbb6ed52e17b3e1f275a1f8c7b22a84b2b84732431e046b3"
-	L2DepositTopic     = "0xb0444523268717a02698be47d0803aa7468c00acbed2f8bd93a0459cde61dd89"
-	L2WithdrawTopic    = "0x73d170910aba9e6d50b102db522b1dbcd796216f5128b445aa2135272886497e"
-)
+type Notifier interface {
+	NotifyWithReTry(title string, text string)
+	Notify(title string, text string) error
+	Enable()
+	Disable()
+}
 
 type App struct {
 	cfg       *Config
@@ -44,212 +34,285 @@ type App struct {
 	tokenInfo map[string]TokenInfo
 }
 
-func (app *App) ETHDepAndWithEvent(vLog *types.Log) {
-	log.GetLogger().Infow("Got ETH Deposit or Withdrawal Event", "event", vLog)
+func (app *App) ETHDepEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got ETH Deposit Event", "event", vLog)
 
-	// check the length vLog.Topics and vLog.Data
-	if len(vLog.Topics) > 3 {
-		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.", "actual", len(vLog.Topics))
-		return
-	}
-
-	if len(vLog.Data) < 32 {
-		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.", "actual", len(vLog.Data))
-		return
-	}
-
-	txHash := vLog.TxHash
-	From := common.HexToAddress(vLog.Topics[1].Hex())
-	To := common.HexToAddress(vLog.Topics[2].Hex())
-
-	// ETH deposit and withdrawal Amount
-	amountData := vLog.Data[:32]
-
-	tokenDecimals := 18
-	value := new(big.Int).SetBytes(amountData)
-	decimalFactor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(tokenDecimals)), nil)
-	amountFloat := new(big.Float).SetInt(value)
-	amountFloat.Quo(amountFloat, new(big.Float).SetInt(decimalFactor))
-
-	Amount := strings.TrimRight(strings.TrimRight(amountFloat.Text('f', tokenDecimals+1), "0"), ".")
-
-	// Slack notify title and text
-	var title string
-	var text string
-
-	eventTopic := common.HexToAddress(vLog.Topics[0].Hex())
-	if eventTopic.Cmp(common.HexToAddress(EthDepositTopic)) == 0 {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Initialized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, From, To, Amount)
-	} else if eventTopic.Cmp(common.HexToAddress(EthWithdrawTopic)) == 0 {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Finalized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nAmount: %+v ETH", txHash, From, To, Amount)
-	} else {
-		title = "Unknown Event"
-	}
-
-	app.notifier.Notify(title, text)
-}
-
-func (app *App) ERC20DepAndWithEvent(vLog *types.Log) {
-	log.GetLogger().Infow("Got ERC20 Deposit or Withdrawal Event", "event", vLog)
-
-	// check the length vLog.Topics and vLog.Data
-	if len(vLog.Topics) > 4 {
-		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.", "actual", len(vLog.Topics))
-		return
-	}
-
-	if len(vLog.Data) < 64 {
-		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.", "actual", len(vLog.Data))
-		return
-	}
-
-	// get symbol and decimals
-	tokenAddress := vLog.Topics[1].Hex()
-	tokenAddr := common.HexToAddress(tokenAddress).Hex()
-	tokenInfo, found := app.tokenInfo[tokenAddr]
-	if !found {
-		log.GetLogger().Errorw("Token info not found for address", "tokenAddress", tokenAddr)
-		return
-	}
-
-	tokenSymbol := tokenInfo.Symbol
-	tokenDecimals := tokenInfo.Decimals
-
-	txHash := vLog.TxHash
-	l1TokenAddress := common.HexToAddress(vLog.Topics[1].Hex())
-	l2TokenAddress := common.HexToAddress(vLog.Topics[2].Hex())
-	FromTo := common.HexToAddress(vLog.Topics[3].Hex())
-
-	// ERC-20 deposit and withdrawal Amount
-	amountData := vLog.Data[32:64]
-
-	value := new(big.Int).SetBytes(amountData)
-	decimalFactor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(tokenDecimals)), nil)
-	amountFloat := new(big.Float).SetInt(value)
-	amountFloat.Quo(amountFloat, new(big.Float).SetInt(decimalFactor))
-
-	Amount := strings.TrimRight(strings.TrimRight(amountFloat.Text('f', tokenDecimals+1), "0"), ".")
-
-	// Slack notify title and text
-	var title string
-	var text string
-
-	eventTopic := common.HexToAddress(vLog.Topics[0].Hex())
-	if eventTopic.Cmp(common.HexToAddress(ERC20DepositTopic)) == 0 {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
-	} else if eventTopic.Cmp(common.HexToAddress(ERC20WithdrawTopic)) == 0 {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
-	} else {
-		title = "Unknown Event"
-	}
-
-	app.notifier.Notify(title, text)
-}
-
-func (app *App) L2DepAndWithEvent(vLog *types.Log) {
-	log.GetLogger().Infow("Got L2 Deposit or Withdrawal Event", "event", vLog)
-
-	// check the length vLog.Topics and vLog.Data
-	if len(vLog.Topics) > 4 {
-		log.GetLogger().Errorw("Error: Length of vLog.Topics is not as expected.", "actual", len(vLog.Topics))
-		return
-	}
-
-	if len(vLog.Data) < 64 {
-		log.GetLogger().Errorw("Error: Length of vLog.Data is not as expected.", "actual", len(vLog.Data))
-		return
-	}
-
-	// get symbol and decimals
-	tokenAddress := vLog.Topics[1].Hex()
-	tokenAddr := common.HexToAddress(tokenAddress).Hex()
-	tokenInfo, found := app.tokenInfo[tokenAddr]
-	if !found {
-		log.GetLogger().Errorw("Token info not found for address", "tokenAddress", tokenAddr)
-		return
-	}
-
-	tokenSymbol := tokenInfo.Symbol
-	tokenDecimals := tokenInfo.Decimals
-
-	txHash := vLog.TxHash
-	l1TokenAddress := common.HexToAddress(vLog.Topics[1].Hex())
-	l2TokenAddress := common.HexToAddress(vLog.Topics[2].Hex())
-	FromTo := common.HexToAddress(vLog.Topics[3].Hex())
-
-	// L2 deposit and withdrawal Amount
-	amountData := vLog.Data[32:64]
-
-	value := new(big.Int).SetBytes(amountData)
-	decimalFactor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(tokenDecimals)), nil)
-	amountFloat := new(big.Float).SetInt(value)
-	amountFloat.Quo(amountFloat, new(big.Float).SetInt(decimalFactor))
-
-	Amount := strings.TrimRight(strings.TrimRight(amountFloat.Text('f', tokenDecimals+1), "0"), ".")
-
-	var title string
-	var text string
-
-	eventTopic := common.HexToAddress(vLog.Topics[0].Hex())
-	tokenTopic := common.HexToAddress(vLog.Topics[1].Hex())
-	if eventTopic.Cmp(common.HexToAddress(L2DepositTopic)) == 0 {
-		if tokenTopic.Cmp(common.HexToAddress("0x0000000000000000000000000000000000000000")) == 0 {
-			title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Finalized]")
-			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l2TokenAddress, Amount, tokenSymbol)
-		} else {
-			title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
-			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
-		}
-	} else if eventTopic.Cmp(common.HexToAddress(L2WithdrawTopic)) == 0 {
-		if tokenTopic.Cmp(common.HexToAddress("0x0000000000000000000000000000000000000000")) == 0 {
-			title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Initialized]")
-			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l2TokenAddress, Amount, tokenSymbol)
-		} else {
-			title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
-			text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", txHash, FromTo, FromTo, l1TokenAddress, l2TokenAddress, Amount, tokenSymbol)
-		}
-	}
-	app.notifier.Notify(title, text)
-}
-
-func (app *App) updateTokenInfo() error {
-	data := &Data{cfg: app.cfg}
-	tokenInfoMap, err := data.tokenInfoMap()
+	l1BridgeFilterer, _, err := app.getBridgeFilterers()
 	if err != nil {
-		return err
+		return
 	}
 
-	app.tokenInfo = tokenInfoMap
+	event, err := l1BridgeFilterer.ParseETHDepositInitiated(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("ETHDepositInitiated event parsing fail", "error", err)
+		return
+	}
 
-	return nil
+	ethDep := bindings.L1StandardBridgeETHDepositInitiated{
+		From:   event.From,
+		To:     event.To,
+		Amount: event.Amount,
+	}
+
+	Amount := app.formatAmount(ethDep.Amount, 18)
+
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Initialized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nAmount: %+v ETH", vLog.TxHash, ethDep.From, ethDep.To, Amount)
+
+	app.notifier.Notify(title, text)
+}
+
+func (app *App) ETHWithEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got ETH Withdrawal Event", "event", vLog)
+
+	l1BridgeFilterer, _, err := app.getBridgeFilterers()
+	if err != nil {
+		return
+	}
+
+	event, err := l1BridgeFilterer.ParseETHWithdrawalFinalized(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("ETHWithdrawalFinalized event log parsing fail", "error", err)
+		return
+	}
+
+	ethWith := bindings.L1StandardBridgeETHWithdrawalFinalized{
+		From:   event.From,
+		To:     event.To,
+		Amount: event.Amount,
+	}
+
+	Amount := app.formatAmount(ethWith.Amount, 18)
+
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Finalized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nAmount: %+v ETH", vLog.TxHash, ethWith.From, ethWith.To, Amount)
+
+	app.notifier.Notify(title, text)
+}
+
+func (app *App) ERC20DepEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got ERC20 Deposit Event", "event", vLog)
+
+	l1BridgeFilterer, _, err := app.getBridgeFilterers()
+	if err != nil {
+		return
+	}
+
+	event, err := l1BridgeFilterer.ParseERC20DepositInitiated(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("ERC20DepositInitiated event parsing fail", "error", err)
+		return
+	}
+
+	erc20Dep := bindings.L1StandardBridgeERC20DepositInitiated{
+		L1Token: event.L1Token,
+		L2Token: event.L2Token,
+		From:    event.From,
+		To:      event.To,
+		Amount:  event.Amount,
+	}
+
+	// get symbol and decimals
+	tokenAddress := erc20Dep.L1Token
+	tokenInfo, found := app.tokenInfo[tokenAddress.Hex()]
+	if !found {
+		log.GetLogger().Errorw("Token info not found for address", "tokenAddress", tokenAddress.Hex())
+		return
+	}
+
+	tokenSymbol := tokenInfo.Symbol
+	tokenDecimals := tokenInfo.Decimals
+
+	Amount := app.formatAmount(erc20Dep.Amount, tokenDecimals)
+
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, erc20Dep.From, erc20Dep.To, erc20Dep.L1Token, erc20Dep.L2Token, Amount, tokenSymbol)
+
+	app.notifier.Notify(title, text)
+}
+
+func (app *App) ERC20WithEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got ERC20 Withdrawal Event", "event", vLog)
+
+	l1BridgeFilterer, _, err := app.getBridgeFilterers()
+	if err != nil {
+		return
+	}
+
+	event, err := l1BridgeFilterer.ParseERC20WithdrawalFinalized(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("ERC20WithdrawalFinalized event parsing fail", "error", err)
+		return
+	}
+
+	erc20With := bindings.L1StandardBridgeERC20WithdrawalFinalized{
+		L1Token: event.L1Token,
+		L2Token: event.L2Token,
+		From:    event.From,
+		To:      event.To,
+		Amount:  event.Amount,
+	}
+
+	// get symbol and decimals
+	tokenAddress := erc20With.L1Token
+	tokenInfo, found := app.tokenInfo[tokenAddress.Hex()]
+	if !found {
+		log.GetLogger().Errorw("Token info not found for address", "tokenAddress", tokenAddress.Hex())
+		return
+	}
+
+	tokenSymbol := tokenInfo.Symbol
+	tokenDecimals := tokenInfo.Decimals
+
+	Amount := app.formatAmount(erc20With.Amount, tokenDecimals)
+
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, erc20With.From, erc20With.To, erc20With.L1Token, erc20With.L2Token, Amount, tokenSymbol)
+
+	app.notifier.Notify(title, text)
+}
+
+func (app *App) L2DepEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got L2 Deposit Event", "event", vLog)
+
+	_, l2BridgeFilterer, err := app.getBridgeFilterers()
+	if err != nil {
+		return
+	}
+
+	event, err := l2BridgeFilterer.ParseDepositFinalized(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("DepositFinalized event parsing fail", "error", err)
+		return
+	}
+
+	l2Dep := bindings.L2StandardBridgeDepositFinalized{
+		L1Token: event.L1Token,
+		L2Token: event.L2Token,
+		From:    event.From,
+		To:      event.To,
+		Amount:  event.Amount,
+	}
+
+	// get symbol and decimals
+	var tokenSymbol string
+	var tokenDecimals int
+
+	tokenAddress := l2Dep.L1Token
+	isETH := tokenAddress.Cmp(common.HexToAddress("0x0000000000000000000000000000000000000000")) == 0
+
+	if isETH {
+		tokenSymbol = "ETH"
+		tokenDecimals = 18
+	} else {
+		tokenInfo, found := app.tokenInfo[tokenAddress.Hex()]
+		if !found {
+			log.GetLogger().Errorw("Token info not found for address", "tokenAddress", tokenAddress.Hex())
+			return
+		}
+		tokenSymbol = tokenInfo.Symbol
+		tokenDecimals = tokenInfo.Decimals
+	}
+
+	Amount := app.formatAmount(l2Dep.Amount, tokenDecimals)
+
+	var title string
+	var text string
+
+	if isETH {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Finalized]")
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L2Token, Amount, tokenSymbol)
+	} else {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L1Token, l2Dep.L2Token, Amount, tokenSymbol)
+	}
+	app.notifier.Notify(title, text)
+}
+
+func (app *App) L2WithEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got L2 Withdrawal Event", "event", vLog)
+
+	_, l2BridgeFilterer, err := app.getBridgeFilterers()
+	if err != nil {
+		return
+	}
+
+	event, err := l2BridgeFilterer.ParseWithdrawalInitiated(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("WithdrawalInitiated event parsing fail", "error", err)
+		return
+	}
+
+	l2With := bindings.L2StandardBridgeWithdrawalInitiated{
+		L1Token: event.L1Token,
+		L2Token: event.L2Token,
+		From:    event.From,
+		To:      event.To,
+		Amount:  event.Amount,
+	}
+
+	// get symbol and decimals
+	var tokenSymbol string
+	var tokenDecimals int
+
+	tokenAddress := l2With.L1Token
+	isETH := tokenAddress.Cmp(common.HexToAddress("0x0000000000000000000000000000000000000000")) == 0
+
+	if isETH {
+		tokenSymbol = "ETH"
+		tokenDecimals = 18
+	} else {
+		tokenInfo, found := app.tokenInfo[tokenAddress.Hex()]
+		if !found {
+			log.GetLogger().Errorw("Token info not found for address", "tokenAddress", tokenAddress.Hex())
+			return
+		}
+		tokenSymbol = tokenInfo.Symbol
+		tokenDecimals = tokenInfo.Decimals
+	}
+
+	Amount := app.formatAmount(l2With.Amount, tokenDecimals)
+
+	var title string
+	var text string
+
+	if isETH {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Initialized]")
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
+	} else {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L1Token, l2With.L2Token, Amount, tokenSymbol)
+	}
+
+	app.notifier.Notify(title, text)
 }
 
 func (app *App) Start() error {
 	service := listener.MakeService(app.cfg.L1WsRpc)
 
 	// L1StandardBridge ETH deposit and withdrawal
-	l1BridgeETHDepositInitiated := listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, app.ETHDepAndWithEvent)
+	l1BridgeETHDepositInitiated := listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, app.ETHDepEvent)
 	service.AddSubscribeRequest(l1BridgeETHDepositInitiated)
 
-	l1BridgeETHWithdrawalFinalized := listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHWithdrawalFinalizedEventABI, app.ETHDepAndWithEvent)
+	l1BridgeETHWithdrawalFinalized := listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHWithdrawalFinalizedEventABI, app.ETHWithEvent)
 	service.AddSubscribeRequest(l1BridgeETHWithdrawalFinalized)
 
 	// L1StandardBridge ERC20 deposit and withdrawal
-	l1BridgeERC20DepositInitiated := listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20DepositInitiatedEventABI, app.ERC20DepAndWithEvent)
+	l1BridgeERC20DepositInitiated := listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20DepositInitiatedEventABI, app.ERC20DepEvent)
 	service.AddSubscribeRequest(l1BridgeERC20DepositInitiated)
 
-	l1BridgeERC20WithdrawalFinalized := listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20WithdrawalFinalizedEventABI, app.ERC20DepAndWithEvent)
+	l1BridgeERC20WithdrawalFinalized := listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20WithdrawalFinalizedEventABI, app.ERC20WithEvent)
 	service.AddSubscribeRequest(l1BridgeERC20WithdrawalFinalized)
 
 	// L2StandardBridge deposit and withdrawal
-	l2BridgeFinalizedDeposit := listener.MakeEventRequest(app.cfg.L2StandardBridge, DepositFinalizedEventABI, app.L2DepAndWithEvent)
+	l2BridgeFinalizedDeposit := listener.MakeEventRequest(app.cfg.L2StandardBridge, DepositFinalizedEventABI, app.L2DepEvent)
 	service.AddSubscribeRequest(l2BridgeFinalizedDeposit)
 
-	l2BridgeWithdrawalRequest := listener.MakeEventRequest(app.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, app.L2DepAndWithEvent)
+	l2BridgeWithdrawalRequest := listener.MakeEventRequest(app.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, app.L2WithEvent)
 	service.AddSubscribeRequest(l2BridgeWithdrawalRequest)
 
 	err := app.updateTokenInfo()
@@ -263,6 +326,18 @@ func (app *App) Start() error {
 		log.GetLogger().Errorw("Failed to start service", "err", err)
 		return err
 	}
+	return nil
+}
+
+func (app *App) updateTokenInfo() error {
+	data := &Data{cfg: app.cfg}
+	tokenInfoMap, err := data.tokenInfoMap()
+	if err != nil {
+		return err
+	}
+
+	app.tokenInfo = tokenInfoMap
+
 	return nil
 }
 
