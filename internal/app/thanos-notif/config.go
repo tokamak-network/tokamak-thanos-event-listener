@@ -1,6 +1,8 @@
 package thanosnotif
 
 type Config struct {
+	Network string
+
 	L1Rpc   string
 	L1WsRpc string
 
@@ -10,15 +12,12 @@ type Config struct {
 	L1StandardBridge string
 	L2StandardBridge string
 
-	L1CrossDomainMessenger string
-	L2CrossDomainMessenger string
-
-	L2ToL1MessagePasser string
-	OptimismPortal      string
-
 	SlackURL string
 
-	TransferEventAddresses []string
+	L1ExplorerUrl string
+	L2ExplorerUrl string
 
 	OFF bool
+
+	TokenAddresses []string
 }

@@ -32,19 +32,18 @@ func startListener(ctx *cli.Context) error {
 	log.GetLogger().Info("Start the application")
 
 	config := &thanosnotif.Config{
-		L1Rpc:                  ctx.String(flags.L1RpcUrlFlagName),
-		L1WsRpc:                ctx.String(flags.L1WsRpcUrlFlagName),
-		L2Rpc:                  ctx.String(flags.L2RpcUrlFlagName),
-		L2WsRpc:                ctx.String(flags.L2WsRpcUrlFlagName),
-		L1StandardBridge:       ctx.String(flags.L1StandardBridgeFlagName),
-		L2StandardBridge:       ctx.String(flags.L2StandardBridgeFlagName),
-		L1CrossDomainMessenger: ctx.String(flags.L1CrossDomainMessengerFlagName),
-		L2CrossDomainMessenger: ctx.String(flags.L2CrossDomainMessengerFlagName),
-		L2ToL1MessagePasser:    ctx.String(flags.L2ToL1MessengerPasserFlagName),
-		OptimismPortal:         ctx.String(flags.OptimismPortalFlagName),
-		SlackURL:               ctx.String(flags.SlackUrlFlagName),
-		TransferEventAddresses: ctx.StringSlice(flags.TransferAddressesFlagName),
-		OFF:                    ctx.Bool(flags.OffFlagName),
+		Network:          ctx.String(flags.NetworkFlagName),
+		L1Rpc:            ctx.String(flags.L1RpcUrlFlagName),
+		L1WsRpc:          ctx.String(flags.L1WsRpcUrlFlagName),
+		L2Rpc:            ctx.String(flags.L2RpcUrlFlagName),
+		L2WsRpc:          ctx.String(flags.L2WsRpcUrlFlagName),
+		L1StandardBridge: ctx.String(flags.L1StandardBridgeFlagName),
+		L2StandardBridge: ctx.String(flags.L2StandardBridgeFlagName),
+		SlackURL:         ctx.String(flags.SlackUrlFlagName),
+		L1ExplorerUrl:    ctx.String(flags.L1ExplorerUrlFlagName),
+		L2ExplorerUrl:    ctx.String(flags.L2ExplorerUrlFlagName),
+		OFF:              ctx.Bool(flags.OffFlagName),
+		TokenAddresses:   ctx.StringSlice(flags.TokenAddressesFlagName),
 	}
 
 	log.GetLogger().Infow("Set up configuration", "config", config)
