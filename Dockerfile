@@ -21,3 +21,5 @@ COPY --from=thanos-build /thanos-events/thanos-app-notif /bin/thanos-app-notif
 COPY --from=certs /etc/ssl/certs /etc/ssl/certs
 
 ENTRYPOINT [ "thanos-app-notif" ]
+
+CMD ["listener"]
