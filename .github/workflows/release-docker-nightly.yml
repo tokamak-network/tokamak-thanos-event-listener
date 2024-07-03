@@ -80,7 +80,7 @@ jobs:
       - name: Show updated Kubernetes resources
         run: |
           cd tokamak-infra/apps/notif_thanos/kustomize/overlays/aws/sepolia-nightly
-          cat kustomization.yaml
+          cat kustomization.yml
 
       - name: Commit and push changes
         uses: EndBug/add-and-commit@v9
