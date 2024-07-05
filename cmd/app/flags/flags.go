@@ -13,6 +13,8 @@ const (
 	L2WsRpcUrlFlagName       = "l2-ws-rpc"
 	L1StandardBridgeFlagName = "l1-standard-bridge-address"
 	L2StandardBridgeFlagName = "l2-standard-bridge-address"
+	L1UsdcBridgeFlagName     = "l1-usdc-bridge-address"
+	L2UsdcBridgeFlagName     = "l2-usdc-bridge-address"
 	SlackUrlFlagName         = "slack-url"
 	L1ExplorerUrlFlagName    = "l1-explorer-url"
 	L2ExplorerUrlFlagName    = "l2-explorer-url"
@@ -61,6 +63,16 @@ var (
 		Value:   predeploys.L2StandardBridge,
 		EnvVars: []string{"L2_STANDARD_BRIDGE"},
 	}
+	L1UsdcBridgeFlag = &cli.StringFlag{
+		Name:    L1UsdcBridgeFlagName,
+		Usage:   "L1UsdcBridge address",
+		EnvVars: []string{"L1_USDC_BRIDGE"},
+	}
+	L2UsdcBridgeFlag = &cli.StringFlag{
+		Name:    L2UsdcBridgeFlagName,
+		Usage:   "L2UsdcBridge address",
+		EnvVars: []string{"L2_USDC_BRIDGE"},
+	}
 	SlackUrlFlag = &cli.StringFlag{
 		Name:    SlackUrlFlagName,
 		Usage:   "slack url for notification",
@@ -97,6 +109,8 @@ func Flags() []cli.Flag {
 		L2WsRpcFlag,
 		L1StandardBridgeFlag,
 		L2StandardBridgeFlag,
+		L1UsdcBridgeFlag,
+		L2UsdcBridgeFlag,
 		SlackUrlFlag,
 		L1ExplorerUrlFlag,
 		L2ExplorerUrlFlag,

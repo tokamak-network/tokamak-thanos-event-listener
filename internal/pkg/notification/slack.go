@@ -3,6 +3,7 @@ package notification
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -12,9 +13,6 @@ import (
 )
 
 type SlackData struct {
-	Attachments []struct {
-		Title string `json:"title"`
-	} `json:"attachments"`
 	Text string `json:"text"`
 }
 
@@ -46,14 +44,7 @@ func (slackNotificationService *SlackNotificationService) Notify(title string, t
 	}
 
 	data := SlackData{
-		Attachments: []struct {
-			Title string `json:"title"`
-		}{
-			{
-				Title: title,
-			},
-		},
-		Text: text,
+		Text: fmt.Sprintf("*%s*\n%s", title, text),
 	}
 
 	payload, err := json.Marshal(data)

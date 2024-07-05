@@ -12,6 +12,9 @@ type Config struct {
 	L1StandardBridge string
 	L2StandardBridge string
 
+	L1UsdcBridge string
+	L2UsdcBridge string
+
 	SlackURL string
 
 	L1ExplorerUrl string
