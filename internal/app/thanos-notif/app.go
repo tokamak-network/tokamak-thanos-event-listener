@@ -3,9 +3,9 @@ package thanosnotif
 import (
 	"fmt"
 
-	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindings"
 
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/listener"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/notification"
@@ -237,6 +237,7 @@ func (app *App) L2DepEvent(vLog *types.Log) {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L1Token, l2Dep.L2Token, Amount, tokenSymbol)
 	}
+
 	app.notifier.Notify(title, text)
 }
 
@@ -297,11 +298,132 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 	} else if isTON {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: NativeToken\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
-
 	} else {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L1Token, l2With.L2Token, Amount, tokenSymbol)
 	}
+
+	app.notifier.Notify(title, text)
+}
+
+func (app *App) L1UsdcDepEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got L1 USDC Deposit Event", "event", vLog)
+
+	l1UsdcBridgeFilterer, _, err := app.getUsdcBridgeFilterers()
+	if err != nil {
+		return
+	}
+
+	event, err := l1UsdcBridgeFilterer.ParseERC20DepositInitiated(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("USDC DepositInitiated event parsing fail", "error", err)
+		return
+	}
+
+	l1UsdcDep := bindings.L1UsdcBridgeERC20DepositInitiated{
+		L1Token: event.L1Token,
+		L2Token: event.L2Token,
+		From:    event.From,
+		To:      event.To,
+		Amount:  event.Amount,
+	}
+
+	Amount := app.formatAmount(l1UsdcDep.Amount, 6)
+
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v USDC", vLog.TxHash, l1UsdcDep.From, l1UsdcDep.To, l1UsdcDep.L1Token, l1UsdcDep.L2Token, Amount)
+
+	app.notifier.Notify(title, text)
+}
+
+func (app *App) L1UsdcWithEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got L1 USDC Withdrawal Event", "event", vLog)
+
+	l1UsdcBridgeFilterer, _, err := app.getUsdcBridgeFilterers()
+	if err != nil {
+		return
+	}
+
+	event, err := l1UsdcBridgeFilterer.ParseERC20WithdrawalFinalized(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("USDC WithdrawalFinalized event parsing fail", "error", err)
+		return
+	}
+
+	l1UsdcWith := bindings.L1UsdcBridgeERC20WithdrawalFinalized{
+		L1Token: event.L1Token,
+		L2Token: event.L2Token,
+		From:    event.From,
+		To:      event.To,
+		Amount:  event.Amount,
+	}
+
+	Amount := app.formatAmount(l1UsdcWith.Amount, 6)
+
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v USDC", vLog.TxHash, l1UsdcWith.From, l1UsdcWith.To, l1UsdcWith.L1Token, l1UsdcWith.L2Token, Amount)
+
+	app.notifier.Notify(title, text)
+}
+
+func (app *App) L2UsdcDepEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got L2 USDC Deposit Event", "event", vLog)
+
+	_, l2UsdcBridgeFilterer, err := app.getUsdcBridgeFilterers()
+	if err != nil {
+		return
+	}
+
+	event, err := l2UsdcBridgeFilterer.ParseDepositFinalized(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("USDC DepositFinalized event parsing fail", "error", err)
+		return
+	}
+
+	l2UsdcDep := bindings.L2UsdcBridgeDepositFinalized{
+		L1Token: event.L1Token,
+		L2Token: event.L2Token,
+		From:    event.From,
+		To:      event.To,
+		Amount:  event.Amount,
+	}
+
+	Amount := app.formatAmount(l2UsdcDep.Amount, 6)
+
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v USDC", vLog.TxHash, l2UsdcDep.From, l2UsdcDep.To, l2UsdcDep.L1Token, l2UsdcDep.L2Token, Amount)
+
+	app.notifier.Notify(title, text)
+}
+
+func (app *App) L2UsdcWithEvent(vLog *types.Log) {
+	log.GetLogger().Infow("Got L2 USDC Withdrawal Event", "event", vLog)
+
+	_, l2UsdcBridgeFilterer, err := app.getUsdcBridgeFilterers()
+	if err != nil {
+		return
+	}
+
+	event, err := l2UsdcBridgeFilterer.ParseWithdrawalInitiated(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("USDC WithdrawalInitiated event parsing fail", "error", err)
+		return
+	}
+
+	l2UsdcWith := bindings.L2UsdcBridgeWithdrawalInitiated{
+		L1Token: event.L1Token,
+		L2Token: event.L2Token,
+		From:    event.From,
+		To:      event.To,
+		Amount:  event.Amount,
+	}
+
+	Amount := app.formatAmount(l2UsdcWith.Amount, 6)
+
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v USDC", vLog.TxHash, l2UsdcWith.From, l2UsdcWith.To, l2UsdcWith.L1Token, l2UsdcWith.L2Token, Amount)
 
 	app.notifier.Notify(title, text)
 }
@@ -311,25 +433,24 @@ func (app *App) Start() error {
 	l2Service := listener.MakeService(app.cfg.L2WsRpc)
 
 	// L1StandardBridge ETH deposit and withdrawal
-	l1BridgeETHDepositInitiated := listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, app.ETHDepEvent)
-	l1Service.AddSubscribeRequest(l1BridgeETHDepositInitiated)
-
-	l1BridgeETHWithdrawalFinalized := listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHWithdrawalFinalizedEventABI, app.ETHWithEvent)
-	l1Service.AddSubscribeRequest(l1BridgeETHWithdrawalFinalized)
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, app.ETHDepEvent))
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHWithdrawalFinalizedEventABI, app.ETHWithEvent))
 
 	// L1StandardBridge ERC20 deposit and withdrawal
-	l1BridgeERC20DepositInitiated := listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20DepositInitiatedEventABI, app.ERC20DepEvent)
-	l1Service.AddSubscribeRequest(l1BridgeERC20DepositInitiated)
-
-	l1BridgeERC20WithdrawalFinalized := listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20WithdrawalFinalizedEventABI, app.ERC20WithEvent)
-	l1Service.AddSubscribeRequest(l1BridgeERC20WithdrawalFinalized)
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20DepositInitiatedEventABI, app.ERC20DepEvent))
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20WithdrawalFinalizedEventABI, app.ERC20WithEvent))
 
 	// L2StandardBridge deposit and withdrawal
-	l2BridgeFinalizedDeposit := listener.MakeEventRequest(app.cfg.L2StandardBridge, DepositFinalizedEventABI, app.L2DepEvent)
-	l2Service.AddSubscribeRequest(l2BridgeFinalizedDeposit)
+	l2Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L2StandardBridge, DepositFinalizedEventABI, app.L2DepEvent))
+	l2Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, app.L2WithEvent))
 
-	l2BridgeWithdrawalRequest := listener.MakeEventRequest(app.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, app.L2WithEvent)
-	l2Service.AddSubscribeRequest(l2BridgeWithdrawalRequest)
+	// L1UsdcBridge ERC20 deposit and withdrawal
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L1UsdcBridge, ERC20DepositInitiatedEventABI, app.L1UsdcDepEvent))
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L1UsdcBridge, ERC20WithdrawalFinalizedEventABI, app.L1UsdcWithEvent))
+
+	// L2UsdcBridge ERC20 deposit and withdrawal
+	l2Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L2UsdcBridge, DepositFinalizedEventABI, app.L2UsdcDepEvent))
+	l2Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L2UsdcBridge, WithdrawalInitiatedEventABI, app.L2UsdcWithEvent))
 
 	err := app.updateTokenInfo()
 	if err != nil {
