@@ -31,22 +31,27 @@ func (data *Data) tokenInfoMap() (map[string]TokenInfo, error) {
 	checkAddresses := make(map[string]struct{})
 
 	for _, tokenAddress := range data.cfg.TokenAddresses {
-		if _, exists := checkAddresses[tokenAddress]; exists {
+		tokenAddressLower := strings.ToLower(tokenAddress)
+
+		if _, exists := checkAddresses[tokenAddressLower]; exists {
 			continue
 		}
 
-		checkAddresses[tokenAddress] = struct{}{}
+		checkAddresses[tokenAddressLower] = struct{}{}
 
-		symbol, decimals, err := data.getTokenInfo(tokenAddress)
+		symbol, decimals, err := data.getTokenInfo(tokenAddressLower)
 		if err != nil {
 			return nil, err
 		}
 
-		tokenInfoMap[tokenAddress] = TokenInfo{
+		tokenInfo := TokenInfo{
 			Address:  tokenAddress,
 			Symbol:   symbol,
 			Decimals: decimals,
 		}
+
+		tokenInfoMap[tokenAddress] = tokenInfo
+		tokenInfoMap[tokenAddressLower] = tokenInfo
 
 		fmt.Printf("Token Address: %s, Symbol: %+v, Decimals: %d\n", tokenAddress, symbol, decimals)
 	}
