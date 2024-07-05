@@ -307,28 +307,29 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 }
 
 func (app *App) Start() error {
-	service := listener.MakeService(app.cfg.L1WsRpc)
+	l1Service := listener.MakeService(app.cfg.L1WsRpc)
+	l2Service := listener.MakeService(app.cfg.L2WsRpc)
 
 	// L1StandardBridge ETH deposit and withdrawal
 	l1BridgeETHDepositInitiated := listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, app.ETHDepEvent)
-	service.AddSubscribeRequest(l1BridgeETHDepositInitiated)
+	l1Service.AddSubscribeRequest(l1BridgeETHDepositInitiated)
 
 	l1BridgeETHWithdrawalFinalized := listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHWithdrawalFinalizedEventABI, app.ETHWithEvent)
-	service.AddSubscribeRequest(l1BridgeETHWithdrawalFinalized)
+	l1Service.AddSubscribeRequest(l1BridgeETHWithdrawalFinalized)
 
 	// L1StandardBridge ERC20 deposit and withdrawal
 	l1BridgeERC20DepositInitiated := listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20DepositInitiatedEventABI, app.ERC20DepEvent)
-	service.AddSubscribeRequest(l1BridgeERC20DepositInitiated)
+	l1Service.AddSubscribeRequest(l1BridgeERC20DepositInitiated)
 
 	l1BridgeERC20WithdrawalFinalized := listener.MakeEventRequest(app.cfg.L1StandardBridge, ERC20WithdrawalFinalizedEventABI, app.ERC20WithEvent)
-	service.AddSubscribeRequest(l1BridgeERC20WithdrawalFinalized)
+	l1Service.AddSubscribeRequest(l1BridgeERC20WithdrawalFinalized)
 
 	// L2StandardBridge deposit and withdrawal
 	l2BridgeFinalizedDeposit := listener.MakeEventRequest(app.cfg.L2StandardBridge, DepositFinalizedEventABI, app.L2DepEvent)
-	service.AddSubscribeRequest(l2BridgeFinalizedDeposit)
+	l2Service.AddSubscribeRequest(l2BridgeFinalizedDeposit)
 
 	l2BridgeWithdrawalRequest := listener.MakeEventRequest(app.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, app.L2WithEvent)
-	service.AddSubscribeRequest(l2BridgeWithdrawalRequest)
+	l2Service.AddSubscribeRequest(l2BridgeWithdrawalRequest)
 
 	err := app.updateTokenInfo()
 	if err != nil {
@@ -336,11 +337,24 @@ func (app *App) Start() error {
 		return err
 	}
 
-	err = service.Start()
-	if err != nil {
-		log.GetLogger().Errorw("Failed to start service", "err", err)
-		return err
+	// Start both services
+	errCh := make(chan error, 2)
+
+	go func() {
+		errCh <- l1Service.Start()
+	}()
+
+	go func() {
+		errCh <- l2Service.Start()
+	}()
+
+	for i := 0; i < 2; i++ {
+		if err := <-errCh; err != nil {
+			log.GetLogger().Errorw("Failed to start service", "err", err)
+			return err
+		}
 	}
+
 	return nil
 }
 
