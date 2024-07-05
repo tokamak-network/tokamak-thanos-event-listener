@@ -202,11 +202,15 @@ func (app *App) L2DepEvent(vLog *types.Log) {
 	var tokenSymbol string
 	var tokenDecimals int
 
-	tokenAddress := l2Dep.L1Token
-	isETH := tokenAddress.Cmp(common.HexToAddress("0x0000000000000000000000000000000000000000")) == 0
+	tokenAddress := l2Dep.L2Token
+	isETH := tokenAddress.Cmp(common.HexToAddress("0x4200000000000000000000000000000000000486")) == 0
+	isTON := tokenAddress.Cmp(common.HexToAddress("0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000")) == 0
 
 	if isETH {
-		tokenSymbol = "ETH"
+		tokenSymbol = " ETH"
+		tokenDecimals = 18
+	} else if isTON {
+		tokenSymbol = " TON"
 		tokenDecimals = 18
 	} else {
 		tokenInfo, found := app.tokenInfo[tokenAddress.Hex()]
@@ -225,7 +229,10 @@ func (app *App) L2DepEvent(vLog *types.Log) {
 
 	if isETH {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Finalized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: Ether\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: ETH\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L2Token, Amount, tokenSymbol)
+	} else if isTON {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: NativeToken\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L2Token, Amount, tokenSymbol)
 	} else {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L1Token, l2Dep.L2Token, Amount, tokenSymbol)
@@ -260,10 +267,14 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 	var tokenDecimals int
 
 	tokenAddress := l2With.L1Token
-	isETH := tokenAddress.Cmp(common.HexToAddress("0x0000000000000000000000000000000000000000")) == 0
+	isETH := tokenAddress.Cmp(common.HexToAddress("0x4200000000000000000000000000000000000486")) == 0
+	isTON := tokenAddress.Cmp(common.HexToAddress("0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000")) == 0
 
 	if isETH {
 		tokenSymbol = "ETH"
+		tokenDecimals = 18
+	} else if isTON {
+		tokenSymbol = " TON"
 		tokenDecimals = 18
 	} else {
 		tokenInfo, found := app.tokenInfo[tokenAddress.Hex()]
@@ -282,7 +293,11 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 
 	if isETH {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Initialized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: Ether\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: ETH\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
+	} else if isTON {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: NativeToken\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
+
 	} else {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
 		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L1Token, l2With.L2Token, Amount, tokenSymbol)
