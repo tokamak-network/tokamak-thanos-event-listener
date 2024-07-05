@@ -48,7 +48,7 @@ func (data *Data) tokenInfoMap() (map[string]TokenInfo, error) {
 			Decimals: decimals,
 		}
 
-		fmt.Printf("Token Address: %s, Symbol: %s, Decimals: %d\n", tokenAddress, symbol, decimals)
+		fmt.Printf("Token Address: %s, Symbol: %+v, Decimals: %d\n", tokenAddress, symbol, decimals)
 	}
 
 	return tokenInfoMap, nil

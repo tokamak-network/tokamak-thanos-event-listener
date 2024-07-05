@@ -39,6 +39,8 @@ func startListener(ctx *cli.Context) error {
 		L2WsRpc:          ctx.String(flags.L2WsRpcUrlFlagName),
 		L1StandardBridge: ctx.String(flags.L1StandardBridgeFlagName),
 		L2StandardBridge: ctx.String(flags.L2StandardBridgeFlagName),
+		L1UsdcBridge:     ctx.String(flags.L1UsdcBridgeFlagName),
+		L2UsdcBridge:     ctx.String(flags.L2UsdcBridgeFlagName),
 		SlackURL:         ctx.String(flags.SlackUrlFlagName),
 		L1ExplorerUrl:    ctx.String(flags.L1ExplorerUrlFlagName),
 		L2ExplorerUrl:    ctx.String(flags.L2ExplorerUrlFlagName),
