@@ -129,7 +129,7 @@ func (app *App) ERC20DepEvent(vLog *types.Log) {
 
 	// Slack notify title and text
 	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, erc20Dep.From, erc20Dep.To, erc20Dep.L1Token, erc20Dep.L2Token, Amount, tokenSymbol)
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, erc20Dep.From, erc20Dep.To, erc20Dep.L1Token, erc20Dep.L2Token, Amount, tokenSymbol)
 
 	app.notifier.Notify(title, text)
 }
@@ -171,7 +171,7 @@ func (app *App) ERC20WithEvent(vLog *types.Log) {
 
 	// Slack notify title and text
 	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, erc20With.From, erc20With.To, erc20With.L1Token, erc20With.L2Token, Amount, tokenSymbol)
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, erc20With.From, erc20With.To, erc20With.L1Token, erc20With.L2Token, Amount, tokenSymbol)
 
 	app.notifier.Notify(title, text)
 }
@@ -225,10 +225,10 @@ func (app *App) L2DepEvent(vLog *types.Log) {
 
 	if isETH {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Finalized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: Ether\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L2Token, Amount, tokenSymbol)
 	} else {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L1Token, l2Dep.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L1Token, l2Dep.L2Token, Amount, tokenSymbol)
 	}
 	app.notifier.Notify(title, text)
 }
@@ -282,10 +282,10 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 
 	if isETH {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Initialized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: Ether\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: Ether\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
 	} else {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1TokenAddress: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2TokenAddress: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L1Token, l2With.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L1Token, l2With.L2Token, Amount, tokenSymbol)
 	}
 
 	app.notifier.Notify(title, text)
