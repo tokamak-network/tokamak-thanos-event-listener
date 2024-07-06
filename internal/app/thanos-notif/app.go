@@ -488,7 +488,6 @@ func (app *App) updateTokenInfo() error {
 	}
 
 	for k, v := range tokenInfoMap {
-		fmt.Printf("symbols: %s", v.Symbol)
 		if v.Symbol == "TON" {
 			app.tonAddress = k
 			break
