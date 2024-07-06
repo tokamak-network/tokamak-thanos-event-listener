@@ -53,7 +53,7 @@ func (data *Data) tokenInfoMap() (map[string]TokenInfo, error) {
 		tokenInfoMap[tokenAddress] = tokenInfo
 		tokenInfoMap[tokenAddressLower] = tokenInfo
 
-		fmt.Printf("Token Address: %s, Symbol: %+v, Decimals: %d\n", tokenAddress, symbol, decimals)
+		fmt.Printf("Token Address: %s, Symbol: %s, Decimals: %d\n", tokenAddress, symbol, decimals)
 	}
 
 	return tokenInfoMap, nil
@@ -128,7 +128,17 @@ func decodeHexString(hexStr string) (string, error) {
 		return "", err
 	}
 
-	decodedString := strings.TrimRight(string(resultBytes), "\x00")
+	decodedString := string(resultBytes)
+
+	decodedString = strings.Map(func(r rune) rune {
+		if r < 32 || r == 127 { // ASCII
+			return -1
+		}
+		return r
+	}, decodedString)
+
+	decodedString = strings.TrimSpace(decodedString)
+
 	return decodedString, nil
 }
 
