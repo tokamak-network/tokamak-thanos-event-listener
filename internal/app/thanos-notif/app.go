@@ -129,7 +129,15 @@ func (app *App) ERC20DepEvent(vLog *types.Log) {
 	Amount := app.formatAmount(erc20Dep.Amount, tokenDecimals)
 
 	// Slack notify title and text
-	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
+	var title string
+
+	isTON := tokenAddress.Cmp(common.HexToAddress(app.tonAddress)) == 0
+
+	if isTON {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [TON Deposit Initialized]")
+	} else {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
+	}
 	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, erc20Dep.From, erc20Dep.To, erc20Dep.L1Token, erc20Dep.L2Token, Amount, tokenSymbol)
 
 	app.notifier.Notify(title, text)
@@ -171,7 +179,15 @@ func (app *App) ERC20WithEvent(vLog *types.Log) {
 	Amount := app.formatAmount(erc20With.Amount, tokenDecimals)
 
 	// Slack notify title and text
-	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
+	var title string
+
+	isTON := tokenAddress.Cmp(common.HexToAddress(app.tonAddress)) == 0
+
+	if isTON {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [TON Withdrawal Finalized]")
+	} else {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
+	}
 	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, erc20With.From, erc20With.To, erc20With.L1Token, erc20With.L2Token, Amount, tokenSymbol)
 
 	app.notifier.Notify(title, text)
@@ -268,7 +284,7 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 	var tokenSymbol string
 	var tokenDecimals int
 
-	tokenAddress := l2With.L1Token
+	tokenAddress := l2With.L2Token
 	isETH := tokenAddress.Cmp(common.HexToAddress("0x4200000000000000000000000000000000000486")) == 0
 	isTON := tokenAddress.Cmp(common.HexToAddress("0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000")) == 0
 
