@@ -74,12 +74,12 @@ jobs:
 
       - name: Update notif_thanos Kubernetes resources
         run: |
-          cd tokamak-infra/apps/notif_thanos/kustomize/overlays/aws/sepolia-nightly
+          cd tokamak-infra/apps/notif_thanos/kustomize/overlays/aws/sepolia
           kustomize edit set image tokamaknetwork/thanos-event-listener:${{ needs.version.outputs.nightly-docker-tag}}
 
       - name: Show updated Kubernetes resources
         run: |
-          cd tokamak-infra/apps/notif_thanos/kustomize/overlays/aws/sepolia-nightly
+          cd tokamak-infra/apps/notif_thanos/kustomize/overlays/aws/sepolia
           cat kustomization.yml
 
       - name: Commit and push changes
@@ -87,5 +87,5 @@ jobs:
         with:
           default_author: github_actions
           github_token: ${{ secrets.ACCESS_TOKEN }}
-          message: '[AUTO] Update thanos-event-listener images tag for sepolia-nightly'
+          message: '[AUTO] Update thanos-event-listener images tag for sepolia'
           cwd: 'tokamak-infra/'

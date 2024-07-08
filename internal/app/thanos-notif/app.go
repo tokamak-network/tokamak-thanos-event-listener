@@ -29,9 +29,10 @@ type Notifier interface {
 }
 
 type App struct {
-	cfg       *Config
-	notifier  Notifier
-	tokenInfo map[string]TokenInfo
+	cfg        *Config
+	notifier   Notifier
+	tonAddress string
+	tokenInfo  map[string]TokenInfo
 }
 
 func (app *App) ETHDepEvent(vLog *types.Log) {
@@ -58,7 +59,7 @@ func (app *App) ETHDepEvent(vLog *types.Log) {
 
 	// Slack notify title and text
 	title := fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Initialized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nAmount: %+v ETH", vLog.TxHash, ethDep.From, ethDep.To, Amount)
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nAmount: %s ETH", vLog.TxHash, ethDep.From, ethDep.To, Amount)
 
 	app.notifier.Notify(title, text)
 }
@@ -87,7 +88,7 @@ func (app *App) ETHWithEvent(vLog *types.Log) {
 
 	// Slack notify title and text
 	title := fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Finalized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nAmount: %+v ETH", vLog.TxHash, ethWith.From, ethWith.To, Amount)
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nAmount: %s ETH", vLog.TxHash, ethWith.From, ethWith.To, Amount)
 
 	app.notifier.Notify(title, text)
 }
@@ -128,8 +129,16 @@ func (app *App) ERC20DepEvent(vLog *types.Log) {
 	Amount := app.formatAmount(erc20Dep.Amount, tokenDecimals)
 
 	// Slack notify title and text
-	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, erc20Dep.From, erc20Dep.To, erc20Dep.L1Token, erc20Dep.L2Token, Amount, tokenSymbol)
+	var title string
+
+	isTON := tokenAddress.Cmp(common.HexToAddress(app.tonAddress)) == 0
+
+	if isTON {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [TON Deposit Initialized]")
+	} else {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
+	}
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, erc20Dep.From, erc20Dep.To, erc20Dep.L1Token, erc20Dep.L2Token, Amount, tokenSymbol)
 
 	app.notifier.Notify(title, text)
 }
@@ -170,8 +179,16 @@ func (app *App) ERC20WithEvent(vLog *types.Log) {
 	Amount := app.formatAmount(erc20With.Amount, tokenDecimals)
 
 	// Slack notify title and text
-	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, erc20With.From, erc20With.To, erc20With.L1Token, erc20With.L2Token, Amount, tokenSymbol)
+	var title string
+
+	isTON := tokenAddress.Cmp(common.HexToAddress(app.tonAddress)) == 0
+
+	if isTON {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [TON Withdrawal Finalized]")
+	} else {
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
+	}
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, erc20With.From, erc20With.To, erc20With.L1Token, erc20With.L2Token, Amount, tokenSymbol)
 
 	app.notifier.Notify(title, text)
 }
@@ -207,10 +224,10 @@ func (app *App) L2DepEvent(vLog *types.Log) {
 	isTON := tokenAddress.Cmp(common.HexToAddress("0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000")) == 0
 
 	if isETH {
-		tokenSymbol = " ETH"
+		tokenSymbol = "ETH"
 		tokenDecimals = 18
 	} else if isTON {
-		tokenSymbol = " TON"
+		tokenSymbol = "TON"
 		tokenDecimals = 18
 	} else {
 		tokenInfo, found := app.tokenInfo[tokenAddress.Hex()]
@@ -229,13 +246,13 @@ func (app *App) L2DepEvent(vLog *types.Log) {
 
 	if isETH {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Deposit Finalized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: ETH\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: ETH\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L2Token, Amount, tokenSymbol)
 	} else if isTON {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: NativeToken\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L2Token, Amount, tokenSymbol)
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [TON Deposit Finalized]")
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, l2Dep.From, l2Dep.To, app.tonAddress, l2Dep.L2Token, Amount, tokenSymbol)
 	} else {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L1Token, l2Dep.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, l2Dep.From, l2Dep.To, l2Dep.L1Token, l2Dep.L2Token, Amount, tokenSymbol)
 	}
 
 	app.notifier.Notify(title, text)
@@ -267,7 +284,7 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 	var tokenSymbol string
 	var tokenDecimals int
 
-	tokenAddress := l2With.L1Token
+	tokenAddress := l2With.L2Token
 	isETH := tokenAddress.Cmp(common.HexToAddress("0x4200000000000000000000000000000000000486")) == 0
 	isTON := tokenAddress.Cmp(common.HexToAddress("0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000")) == 0
 
@@ -275,7 +292,7 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 		tokenSymbol = "ETH"
 		tokenDecimals = 18
 	} else if isTON {
-		tokenSymbol = " TON"
+		tokenSymbol = "TON"
 		tokenDecimals = 18
 	} else {
 		tokenInfo, found := app.tokenInfo[tokenAddress.Hex()]
@@ -294,13 +311,13 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 
 	if isETH {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Initialized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: ETH\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: ETH\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
 	} else if isTON {
-		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: NativeToken\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L2Token, Amount, tokenSymbol)
+		title = fmt.Sprintf("[" + app.cfg.Network + "] [TON Withdrawal Initialized]")
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, l2With.From, l2With.To, app.tonAddress, l2With.L2Token, Amount, tokenSymbol)
 	} else {
 		title = fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
-		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v%s", vLog.TxHash, l2With.From, l2With.To, l2With.L1Token, l2With.L2Token, Amount, tokenSymbol)
+		text = fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s %s", vLog.TxHash, l2With.From, l2With.To, l2With.L1Token, l2With.L2Token, Amount, tokenSymbol)
 	}
 
 	app.notifier.Notify(title, text)
@@ -331,8 +348,8 @@ func (app *App) L1UsdcDepEvent(vLog *types.Log) {
 	Amount := app.formatAmount(l1UsdcDep.Amount, 6)
 
 	// Slack notify title and text
-	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Initialized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v USDC", vLog.TxHash, l1UsdcDep.From, l1UsdcDep.To, l1UsdcDep.L1Token, l1UsdcDep.L2Token, Amount)
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [USDC Deposit Initialized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s USDC", vLog.TxHash, l1UsdcDep.From, l1UsdcDep.To, l1UsdcDep.L1Token, l1UsdcDep.L2Token, Amount)
 
 	app.notifier.Notify(title, text)
 }
@@ -362,8 +379,8 @@ func (app *App) L1UsdcWithEvent(vLog *types.Log) {
 	Amount := app.formatAmount(l1UsdcWith.Amount, 6)
 
 	// Slack notify title and text
-	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Finalized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v USDC", vLog.TxHash, l1UsdcWith.From, l1UsdcWith.To, l1UsdcWith.L1Token, l1UsdcWith.L2Token, Amount)
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [USDC Withdrawal Finalized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s USDC", vLog.TxHash, l1UsdcWith.From, l1UsdcWith.To, l1UsdcWith.L1Token, l1UsdcWith.L2Token, Amount)
 
 	app.notifier.Notify(title, text)
 }
@@ -392,8 +409,8 @@ func (app *App) L2UsdcDepEvent(vLog *types.Log) {
 
 	Amount := app.formatAmount(l2UsdcDep.Amount, 6)
 
-	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Deposit Finalized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v USDC", vLog.TxHash, l2UsdcDep.From, l2UsdcDep.To, l2UsdcDep.L1Token, l2UsdcDep.L2Token, Amount)
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [USDC Deposit Finalized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L1ExplorerUrl+"/address/%s\nTo: "+app.cfg.L2ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s USDC", vLog.TxHash, l2UsdcDep.From, l2UsdcDep.To, l2UsdcDep.L1Token, l2UsdcDep.L2Token, Amount)
 
 	app.notifier.Notify(title, text)
 }
@@ -422,8 +439,8 @@ func (app *App) L2UsdcWithEvent(vLog *types.Log) {
 
 	Amount := app.formatAmount(l2UsdcWith.Amount, 6)
 
-	title := fmt.Sprintf("[" + app.cfg.Network + "] [ERC-20 Withdrawal Initialized]")
-	text := fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %+v USDC", vLog.TxHash, l2UsdcWith.From, l2UsdcWith.To, l2UsdcWith.L1Token, l2UsdcWith.L2Token, Amount)
+	title := fmt.Sprintf("[" + app.cfg.Network + "] [USDC Withdrawal Initialized]")
+	text := fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s USDC", vLog.TxHash, l2UsdcWith.From, l2UsdcWith.To, l2UsdcWith.L1Token, l2UsdcWith.L2Token, Amount)
 
 	app.notifier.Notify(title, text)
 }
@@ -484,6 +501,13 @@ func (app *App) updateTokenInfo() error {
 	tokenInfoMap, err := data.tokenInfoMap()
 	if err != nil {
 		return err
+	}
+
+	for k, v := range tokenInfoMap {
+		if v.Symbol == "TON" {
+			app.tonAddress = k
+			break
+		}
 	}
 
 	app.tokenInfo = tokenInfoMap
