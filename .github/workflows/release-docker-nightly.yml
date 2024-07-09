@@ -2,7 +2,7 @@ name: Publish thanos-event-listener (nightly)
 
 on:
   push:
-    branches: 
+    branches:
       - main
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     # map the step outputs to job outputs
     outputs:
-        nightly-docker-tag: ${{ steps.docker-image-name.outputs.nightly-docker-tag }}
+      nightly-docker-tag: ${{ steps.docker-image-name.outputs.nightly-docker-tag }}
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_ACCESS_TOKEN_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN_SECRET }}
-    
+
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
@@ -53,7 +53,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: tokamaknetwork/thanos-event-listener:${{ needs.version.outputs.nightly-docker-tag }}
-      
+
   update-kustomize:
     name: Update image version in kustomize manifest file (nightly)
     needs: [version, thanos-event-listener]
@@ -74,12 +74,12 @@ jobs:
 
       - name: Update notif_thanos Kubernetes resources
         run: |
-          cd tokamak-infra/apps/notif_thanos/kustomize/overlays/aws/sepolia
+          cd tokamak-infra/apps/notif_thanos/kustomize/overlays/aws/thanos-sepolia
           kustomize edit set image tokamaknetwork/thanos-event-listener:${{ needs.version.outputs.nightly-docker-tag}}
 
       - name: Show updated Kubernetes resources
         run: |
-          cd tokamak-infra/apps/notif_thanos/kustomize/overlays/aws/sepolia
+          cd tokamak-infra/apps/notif_thanos/kustomize/overlays/aws/thanos-sepolia
           cat kustomization.yml
 
       - name: Commit and push changes
