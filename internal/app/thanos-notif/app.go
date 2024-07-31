@@ -1,14 +1,19 @@
 package thanosnotif
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindings"
+	"golang.org/x/sync/errgroup"
 
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/erc20"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/listener"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/notification"
+	types2 "github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
@@ -32,7 +37,31 @@ type App struct {
 	cfg        *Config
 	notifier   Notifier
 	tonAddress string
-	tokenInfo  map[string]TokenInfo
+	tokenInfo  map[string]*types2.Token
+	ethClient  *ethclient.Client
+}
+
+func New(config *Config) (*App, error) {
+	slackNotifSrv := notification.MakeSlackNotificationService(config.SlackURL, 5)
+	ethClient, err := ethclient.Dial(config.L1Rpc)
+	if err != nil {
+		return nil, err
+	}
+	app := &App{
+		cfg:        config,
+		notifier:   slackNotifSrv,
+		tokenInfo:  make(map[string]*types2.Token),
+		ethClient:  ethClient,
+		tonAddress: config.TonAddress,
+	}
+
+	err = app.fetchTokenInfo()
+	if err != nil {
+		log.GetLogger().Errorw("Failed to update token info", "error", err)
+		return nil, err
+	}
+
+	return app, nil
 }
 
 func (app *App) ETHDepEvent(vLog *types.Log) {
@@ -90,7 +119,9 @@ func (app *App) ETHWithEvent(vLog *types.Log) {
 	title := fmt.Sprintf("[" + app.cfg.Network + "] [ETH Withdrawal Finalized]")
 	text := fmt.Sprintf("Tx: "+app.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nAmount: %s ETH", vLog.TxHash, ethWith.From, ethWith.To, Amount)
 
-	app.notifier.Notify(title, text)
+	if err := app.notifier.Notify(title, text); err != nil {
+		log.GetLogger().Errorw("Failed to notify ETH Event", "error", err)
+	}
 }
 
 func (app *App) ERC20DepEvent(vLog *types.Log) {
@@ -420,12 +451,13 @@ func (app *App) L2UsdcWithEvent(vLog *types.Log) {
 
 	_, l2UsdcBridgeFilterer, err := app.getUsdcBridgeFilterers()
 	if err != nil {
+		log.GetLogger().Errorw("Failed to get USDC bridge filters", "error", err)
 		return
 	}
 
 	event, err := l2UsdcBridgeFilterer.ParseWithdrawalInitiated(*vLog)
 	if err != nil {
-		log.GetLogger().Errorw("USDC WithdrawalInitiated event parsing fail", "error", err)
+		log.GetLogger().Errorw("Failed to parse the USDC WithdrawalInitiated event", "error", err)
 		return
 	}
 
@@ -442,7 +474,10 @@ func (app *App) L2UsdcWithEvent(vLog *types.Log) {
 	title := fmt.Sprintf("[" + app.cfg.Network + "] [USDC Withdrawal Initialized]")
 	text := fmt.Sprintf("Tx: "+app.cfg.L2ExplorerUrl+"/tx/%s\nFrom: "+app.cfg.L2ExplorerUrl+"/address/%s\nTo: "+app.cfg.L1ExplorerUrl+"/address/%s\nL1Token: "+app.cfg.L1ExplorerUrl+"/token/%s\nL2Token: "+app.cfg.L2ExplorerUrl+"/token/%s\nAmount: %s USDC", vLog.TxHash, l2UsdcWith.From, l2UsdcWith.To, l2UsdcWith.L1Token, l2UsdcWith.L2Token, Amount)
 
-	app.notifier.Notify(title, text)
+	err = app.notifier.Notify(title, text)
+	if err != nil {
+		return
+	}
 }
 
 func (app *App) Start() error {
@@ -469,60 +504,55 @@ func (app *App) Start() error {
 	l2Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L2UsdcBridge, DepositFinalizedEventABI, app.L2UsdcDepEvent))
 	l2Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L2UsdcBridge, WithdrawalInitiatedEventABI, app.L2UsdcWithEvent))
 
-	err := app.updateTokenInfo()
-	if err != nil {
-		log.GetLogger().Errorw("Failed to update token info", "err", err)
-		return err
-	}
+	var g errgroup.Group
 
-	// Start both services
-	errCh := make(chan error, 2)
-
-	go func() {
-		errCh <- l1Service.Start()
-	}()
-
-	go func() {
-		errCh <- l2Service.Start()
-	}()
-
-	for i := 0; i < 2; i++ {
-		if err := <-errCh; err != nil {
-			log.GetLogger().Errorw("Failed to start service", "err", err)
+	g.Go(func() error {
+		err := l1Service.Start()
+		if err != nil {
 			return err
 		}
+
+		return nil
+	})
+
+	g.Go(func() error {
+		err := l2Service.Start()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		log.GetLogger().Errorw("Failed to start service", "error", err)
+		return err
 	}
 
 	return nil
 }
 
-func (app *App) updateTokenInfo() error {
-	data := &Data{cfg: app.cfg}
-	tokenInfoMap, err := data.tokenInfoMap()
-	if err != nil {
-		return err
-	}
-
-	for k, v := range tokenInfoMap {
-		if v.Symbol == "TON" {
-			app.tonAddress = k
-			break
+func (app *App) fetchTokenInfo() error {
+	tokenAddresses := app.cfg.TokenAddresses
+	tokenInfoMap := make(map[string]*types2.Token)
+	for _, tokenAddress := range tokenAddresses {
+		tokenInfo, err := erc20.FetchTokenInfo(app.ethClient, tokenAddress)
+		if err != nil {
+			log.GetLogger().Errorw("Failed to fetch token info", "error", err, "address", tokenAddress)
+			return err
 		}
+
+		if tokenInfo == nil {
+			log.GetLogger().Errorw("Token info empty", "address", tokenAddress)
+			return errors.New("token info is empty")
+		}
+
+		log.GetLogger().Infow("Got token info", "token", tokenInfo)
+
+		tokenInfoMap[tokenAddress] = tokenInfo
 	}
 
 	app.tokenInfo = tokenInfoMap
 
 	return nil
-}
-
-func New(config *Config) *App {
-	slackNotifSrv := notification.MakeSlackNotificationService(config.SlackURL, 5)
-
-	app := &App{
-		cfg:       config,
-		notifier:  slackNotifSrv,
-		tokenInfo: make(map[string]TokenInfo),
-	}
-
-	return app
 }

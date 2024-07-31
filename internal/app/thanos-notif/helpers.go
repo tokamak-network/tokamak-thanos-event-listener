@@ -6,8 +6,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindings"
+
+	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
 func (app *App) formatAmount(amount *big.Int, tokenDecimals int) string {

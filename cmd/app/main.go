@@ -3,11 +3,11 @@ package main
 import (
 	"os"
 
+	"github.com/urfave/cli/v2"
+
 	"github.com/tokamak-network/tokamak-thanos-event-listener/cmd/app/flags"
 	thanosnotif "github.com/tokamak-network/tokamak-thanos-event-listener/internal/app/thanos-notif"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
-
-	"github.com/urfave/cli/v2"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 		},
 	}
 	if err := app.Run(os.Args); err != nil {
-		log.GetLogger().Fatalw("Failed to start the application", "err", err)
+		log.GetLogger().Fatalw("Failed to start the application", "error", err)
 	}
 }
 
@@ -46,11 +46,20 @@ func startListener(ctx *cli.Context) error {
 		L2ExplorerUrl:    ctx.String(flags.L2ExplorerUrlFlagName),
 		OFF:              ctx.Bool(flags.OffFlagName),
 		TokenAddresses:   ctx.StringSlice(flags.TokenAddressesFlagName),
+		TonAddress:       ctx.String(flags.TonAddressFlagName),
+	}
+
+	if err := config.Validate(); err != nil {
+		log.GetLogger().Fatalw("Failed to start the application", "error", err)
 	}
 
 	log.GetLogger().Infow("Set up configuration", "config", config)
 
-	app := thanosnotif.New(config)
+	app, err := thanosnotif.New(config)
+	if err != nil {
+		log.GetLogger().Errorw("Failed to start the application", "error", err)
+		return err
+	}
 
 	return app.Start()
 }

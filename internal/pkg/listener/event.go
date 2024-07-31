@@ -118,7 +118,7 @@ func (service *EventService) Start() error {
 	defer close(logsCh)
 	sub, err := service.client.SubscribeFilterLogs(context.Background(), query, logsCh)
 	if err != nil {
-		log.GetLogger().Errorw("Failed to subscribe filter logs", "err", err)
+		log.GetLogger().Errorw("Failed to subscribe filter logs", "error", err)
 		return err
 	}
 	defer sub.Unsubscribe()
@@ -126,7 +126,7 @@ func (service *EventService) Start() error {
 	for {
 		select {
 		case err := <-sub.Err():
-			log.GetLogger().Errorw("Failed to listen the subscription", "err", err)
+			log.GetLogger().Errorw("Failed to listen the subscription", "error", err)
 			return err
 		case vLog := <-logsCh:
 			key := serializeEventRequestWithAddressAndABI(vLog.Address, vLog.Topics[0])
@@ -164,7 +164,7 @@ func (service *EventService) GetBlockByHash(blockHash common.Hash) (*types.Block
 		}
 	}
 	if err != nil {
-		log.GetLogger().Errorw("Failed to retrieve block", "err", err)
+		log.GetLogger().Errorw("Failed to retrieve block", "error", err)
 		return nil, err
 	}
 	return block, nil

@@ -20,6 +20,7 @@ const (
 	L2ExplorerUrlFlagName    = "l2-explorer-url"
 	OffFlagName              = "slack-on-off"
 	TokenAddressesFlagName   = "token-addresses"
+	TonAddressFlagName       = "ton-address"
 )
 
 var (
@@ -98,6 +99,11 @@ var (
 		Usage:   "List of addresses to get symbol and decimals",
 		EnvVars: []string{"TOKEN_ADDRESSES"},
 	}
+	TonAddressFlag = &cli.StringFlag{
+		Name:    TonAddressFlagName,
+		Usage:   "Ton address",
+		EnvVars: []string{"TON_ADDRESS"},
+	}
 )
 
 func Flags() []cli.Flag {
@@ -116,5 +122,6 @@ func Flags() []cli.Flag {
 		L2ExplorerUrlFlag,
 		OffFlag,
 		TokenAddressesFlag,
+		TonAddressFlag,
 	}
 }
