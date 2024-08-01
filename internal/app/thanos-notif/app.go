@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindings"
 	"golang.org/x/sync/errgroup"
@@ -13,7 +13,7 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/erc20"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/listener"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/notification"
-	types2 "github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
@@ -37,7 +37,7 @@ type App struct {
 	cfg        *Config
 	notifier   Notifier
 	tonAddress string
-	tokenInfo  map[string]*types2.Token
+	tokenInfo  map[string]*types.Token
 	ethClient  *ethclient.Client
 }
 
@@ -50,7 +50,7 @@ func New(config *Config) (*App, error) {
 	app := &App{
 		cfg:        config,
 		notifier:   slackNotifSrv,
-		tokenInfo:  make(map[string]*types2.Token),
+		tokenInfo:  make(map[string]*types.Token),
 		ethClient:  ethClient,
 		tonAddress: config.TonAddress,
 	}
@@ -64,7 +64,7 @@ func New(config *Config) (*App, error) {
 	return app, nil
 }
 
-func (app *App) ETHDepEvent(vLog *types.Log) {
+func (app *App) ETHDepEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got ETH Deposit Event", "event", vLog)
 
 	l1BridgeFilterer, _, err := app.getBridgeFilterers()
@@ -93,7 +93,7 @@ func (app *App) ETHDepEvent(vLog *types.Log) {
 	app.notifier.Notify(title, text)
 }
 
-func (app *App) ETHWithEvent(vLog *types.Log) {
+func (app *App) ETHWithEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got ETH Withdrawal Event", "event", vLog)
 
 	l1BridgeFilterer, _, err := app.getBridgeFilterers()
@@ -124,7 +124,7 @@ func (app *App) ETHWithEvent(vLog *types.Log) {
 	}
 }
 
-func (app *App) ERC20DepEvent(vLog *types.Log) {
+func (app *App) ERC20DepEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got ERC20 Deposit Event", "event", vLog)
 
 	l1BridgeFilterer, _, err := app.getBridgeFilterers()
@@ -174,7 +174,7 @@ func (app *App) ERC20DepEvent(vLog *types.Log) {
 	app.notifier.Notify(title, text)
 }
 
-func (app *App) ERC20WithEvent(vLog *types.Log) {
+func (app *App) ERC20WithEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got ERC20 Withdrawal Event", "event", vLog)
 
 	l1BridgeFilterer, _, err := app.getBridgeFilterers()
@@ -224,7 +224,7 @@ func (app *App) ERC20WithEvent(vLog *types.Log) {
 	app.notifier.Notify(title, text)
 }
 
-func (app *App) L2DepEvent(vLog *types.Log) {
+func (app *App) L2DepEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got L2 Deposit Event", "event", vLog)
 
 	_, l2BridgeFilterer, err := app.getBridgeFilterers()
@@ -289,7 +289,7 @@ func (app *App) L2DepEvent(vLog *types.Log) {
 	app.notifier.Notify(title, text)
 }
 
-func (app *App) L2WithEvent(vLog *types.Log) {
+func (app *App) L2WithEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got L2 Withdrawal Event", "event", vLog)
 
 	_, l2BridgeFilterer, err := app.getBridgeFilterers()
@@ -354,7 +354,7 @@ func (app *App) L2WithEvent(vLog *types.Log) {
 	app.notifier.Notify(title, text)
 }
 
-func (app *App) L1UsdcDepEvent(vLog *types.Log) {
+func (app *App) L1UsdcDepEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got L1 USDC Deposit Event", "event", vLog)
 
 	l1UsdcBridgeFilterer, _, err := app.getUsdcBridgeFilterers()
@@ -385,7 +385,7 @@ func (app *App) L1UsdcDepEvent(vLog *types.Log) {
 	app.notifier.Notify(title, text)
 }
 
-func (app *App) L1UsdcWithEvent(vLog *types.Log) {
+func (app *App) L1UsdcWithEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got L1 USDC Withdrawal Event", "event", vLog)
 
 	l1UsdcBridgeFilterer, _, err := app.getUsdcBridgeFilterers()
@@ -416,7 +416,7 @@ func (app *App) L1UsdcWithEvent(vLog *types.Log) {
 	app.notifier.Notify(title, text)
 }
 
-func (app *App) L2UsdcDepEvent(vLog *types.Log) {
+func (app *App) L2UsdcDepEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got L2 USDC Deposit Event", "event", vLog)
 
 	_, l2UsdcBridgeFilterer, err := app.getUsdcBridgeFilterers()
@@ -446,7 +446,7 @@ func (app *App) L2UsdcDepEvent(vLog *types.Log) {
 	app.notifier.Notify(title, text)
 }
 
-func (app *App) L2UsdcWithEvent(vLog *types.Log) {
+func (app *App) L2UsdcWithEvent(vLog *ethereumTypes.Log) {
 	log.GetLogger().Infow("Got L2 USDC Withdrawal Event", "event", vLog)
 
 	_, l2UsdcBridgeFilterer, err := app.getUsdcBridgeFilterers()
@@ -481,8 +481,17 @@ func (app *App) L2UsdcWithEvent(vLog *types.Log) {
 }
 
 func (app *App) Start() error {
-	l1Service := listener.MakeService(app.cfg.L1WsRpc)
-	l2Service := listener.MakeService(app.cfg.L2WsRpc)
+	l1Service, err := listener.MakeService(app.cfg.L1WsRpc)
+	if err != nil {
+		log.GetLogger().Errorw("Failed to make L1 service", "error", err)
+		return err
+	}
+
+	l2Service, err := listener.MakeService(app.cfg.L2WsRpc)
+	if err != nil {
+		log.GetLogger().Errorw("Failed to make L2 service", "error", err)
+		return err
+	}
 
 	// L1StandardBridge ETH deposit and withdrawal
 	l1Service.AddSubscribeRequest(listener.MakeEventRequest(app.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, app.ETHDepEvent))
@@ -534,7 +543,7 @@ func (app *App) Start() error {
 
 func (app *App) fetchTokenInfo() error {
 	tokenAddresses := app.cfg.TokenAddresses
-	tokenInfoMap := make(map[string]*types2.Token)
+	tokenInfoMap := make(map[string]*types.Token)
 	for _, tokenAddress := range tokenAddresses {
 		tokenInfo, err := erc20.FetchTokenInfo(app.ethClient, tokenAddress)
 		if err != nil {

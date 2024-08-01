@@ -34,21 +34,35 @@ type EventService struct {
 	filter     *CounterBloom
 }
 
-func MakeService(host string) *EventService {
-	service := &EventService{host: host, filter: MakeDefaultCounterBloom()}
-	service.initialize()
-	return service
+func MakeService(host string) (*EventService, error) {
+	log.GetLogger().Infow("Start to listen", "host", host)
+	client, err := ethclient.Dial(host)
+	if err != nil {
+		return nil, err
+	}
+
+	log.GetLogger().Infow("Connected to", "host", host)
+
+	service := &EventService{
+		host:       host,
+		filter:     MakeDefaultCounterBloom(),
+		client:     client,
+		requests:   make([]RequestSubscriber, 0),
+		requestMap: make(map[string]RequestSubscriber),
+	}
+
+	return service, nil
 }
 
 func MakeServiceWithStartBlock(host string, start *big.Int) *EventService {
-	service := &EventService{host: host, startBlock: start, filter: MakeDefaultCounterBloom()}
-	service.initialize()
+	service := &EventService{
+		host:       host,
+		startBlock: start,
+		filter:     MakeDefaultCounterBloom(),
+		requests:   make([]RequestSubscriber, 0),
+		requestMap: make(map[string]RequestSubscriber),
+	}
 	return service
-}
-
-func (service *EventService) initialize() {
-	service.requests = make([]RequestSubscriber, 0)
-	service.requestMap = make(map[string]RequestSubscriber)
 }
 
 func (service *EventService) existRequest(request RequestSubscriber) bool {
@@ -93,16 +107,6 @@ func (service *EventService) CanProcess(log *types.Log) bool {
 }
 
 func (service *EventService) Start() error {
-	log.GetLogger().Infow("Start to listen", "host", service.host)
-	client, err := ethclient.Dial(service.host)
-	if err != nil {
-		return err
-	}
-
-	log.GetLogger().Infow("Connected to", "host", service.host)
-
-	service.client = client
-
 	fromBlock := service.startBlock
 
 	addresses := CalculateAddresses(service.requests)
@@ -131,11 +135,15 @@ func (service *EventService) Start() error {
 		case vLog := <-logsCh:
 			key := serializeEventRequestWithAddressAndABI(vLog.Address, vLog.Topics[0])
 			request := service.RequestByKey(key)
-			if request != nil {
-				if service.CanProcess(&vLog) {
-					request.Callback(&vLog)
-				}
+
+			if request == nil {
+				continue
 			}
+
+			if !service.CanProcess(&vLog) {
+				continue
+			}
+			request.Callback(&vLog)
 		}
 	}
 }

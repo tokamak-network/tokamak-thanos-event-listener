@@ -6,7 +6,7 @@ import (
 
 func CalculateAddresses(requests []RequestSubscriber) []common.Address {
 	encountered := map[common.Address]bool{}
-	result := []common.Address{}
+	result := make([]common.Address, 0)
 
 	for _, v := range requests {
 		if v.GetRequestType() == RequestEventType {
