@@ -7,6 +7,7 @@ import (
 
 	"github.com/tokamak-network/tokamak-thanos-event-listener/cmd/app/flags"
 	thanosnotif "github.com/tokamak-network/tokamak-thanos-event-listener/internal/app/thanos-notif"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/redis"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
@@ -33,9 +34,7 @@ func startListener(ctx *cli.Context) error {
 
 	config := &thanosnotif.Config{
 		Network:          ctx.String(flags.NetworkFlagName),
-		L1Rpc:            ctx.String(flags.L1RpcUrlFlagName),
 		L1WsRpc:          ctx.String(flags.L1WsRpcUrlFlagName),
-		L2Rpc:            ctx.String(flags.L2RpcUrlFlagName),
 		L2WsRpc:          ctx.String(flags.L2WsRpcUrlFlagName),
 		L1StandardBridge: ctx.String(flags.L1StandardBridgeFlagName),
 		L2StandardBridge: ctx.String(flags.L2StandardBridgeFlagName),
@@ -44,9 +43,12 @@ func startListener(ctx *cli.Context) error {
 		SlackURL:         ctx.String(flags.SlackUrlFlagName),
 		L1ExplorerUrl:    ctx.String(flags.L1ExplorerUrlFlagName),
 		L2ExplorerUrl:    ctx.String(flags.L2ExplorerUrlFlagName),
-		OFF:              ctx.Bool(flags.OffFlagName),
-		TokenAddresses:   ctx.StringSlice(flags.TokenAddressesFlagName),
+		L1TokenAddresses: ctx.StringSlice(flags.L1TokenAddresses),
+		L2TokenAddresses: ctx.StringSlice(flags.L2TokenAddresses),
 		TonAddress:       ctx.String(flags.TonAddressFlagName),
+		RedisConfig: redis.Config{
+			Addresses: ctx.String(flags.RedisAddressFlagName),
+		},
 	}
 
 	if err := config.Validate(); err != nil {
@@ -55,11 +57,11 @@ func startListener(ctx *cli.Context) error {
 
 	log.GetLogger().Infow("Set up configuration", "config", config)
 
-	app, err := thanosnotif.New(config)
+	app, err := thanosnotif.New(ctx.Context, config)
 	if err != nil {
 		log.GetLogger().Errorw("Failed to start the application", "error", err)
 		return err
 	}
 
-	return app.Start()
+	return app.Start(ctx.Context)
 }

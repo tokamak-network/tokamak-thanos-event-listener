@@ -7,9 +7,7 @@ import (
 
 const (
 	NetworkFlagName          = "network"
-	L1RpcUrlFlagName         = "l1-rpc"
 	L1WsRpcUrlFlagName       = "l1-ws-rpc"
-	L2RpcUrlFlagName         = "l2-rpc"
 	L2WsRpcUrlFlagName       = "l2-ws-rpc"
 	L1StandardBridgeFlagName = "l1-standard-bridge-address"
 	L2StandardBridgeFlagName = "l2-standard-bridge-address"
@@ -18,9 +16,10 @@ const (
 	SlackUrlFlagName         = "slack-url"
 	L1ExplorerUrlFlagName    = "l1-explorer-url"
 	L2ExplorerUrlFlagName    = "l2-explorer-url"
-	OffFlagName              = "slack-on-off"
-	TokenAddressesFlagName   = "token-addresses"
+	L1TokenAddresses         = "l1-token-addresses"
+	L2TokenAddresses         = "l2-token-addresses"
 	TonAddressFlagName       = "ton-address"
+	RedisAddressFlagName     = "redis-address"
 )
 
 var (
@@ -29,23 +28,11 @@ var (
 		Usage:   "Network name",
 		EnvVars: []string{"NETWORK"},
 	}
-	L1RpcFlag = &cli.StringFlag{
-		Name:    L1RpcUrlFlagName,
-		Usage:   "L1 RPC url",
-		Value:   "http://localhost:8545",
-		EnvVars: []string{"L1_RPC"},
-	}
 	L1WsRpcFlag = &cli.StringFlag{
 		Name:    L1WsRpcUrlFlagName,
 		Usage:   "L1 RPC url",
 		Value:   "ws://localhost:8546",
 		EnvVars: []string{"L1_WS_RPC"},
-	}
-	L2RPCFlag = &cli.StringFlag{
-		Name:    L2RpcUrlFlagName,
-		Usage:   "L2 RPC url",
-		Value:   "http://localhost:9545",
-		EnvVars: []string{"L2_RPC"},
 	}
 	L2WsRpcFlag = &cli.StringFlag{
 		Name:    L2WsRpcUrlFlagName,
@@ -89,29 +76,33 @@ var (
 		Usage:   "L2 explorer url",
 		EnvVars: []string{"L2_EXPLORER_URL"},
 	}
-	OffFlag = &cli.BoolFlag{
-		Name:    OffFlagName,
-		Usage:   "Slack active",
-		EnvVars: []string{"OFF"},
+	L1TokenAddressesFlag = &cli.StringSliceFlag{
+		Name:    L1TokenAddresses,
+		Usage:   "List of L1 tokens address to get symbol and decimals",
+		EnvVars: []string{"L1_TOKEN_ADDRESSES"},
 	}
-	TokenAddressesFlag = &cli.StringSliceFlag{
-		Name:    TokenAddressesFlagName,
-		Usage:   "List of addresses to get symbol and decimals",
-		EnvVars: []string{"TOKEN_ADDRESSES"},
+	L2TokenAddressesFlag = &cli.StringSliceFlag{
+		Name:    L2TokenAddresses,
+		Usage:   "List of L2 tokens address to get symbol and decimals",
+		EnvVars: []string{"L2_TOKEN_ADDRESSES"},
 	}
 	TonAddressFlag = &cli.StringFlag{
 		Name:    TonAddressFlagName,
 		Usage:   "Ton address",
 		EnvVars: []string{"TON_ADDRESS"},
 	}
+	RedisAddressFlag = &cli.StringFlag{
+		Name: RedisAddressFlagName,
+		EnvVars: []string{
+			"REDIS_ADDRESS",
+		},
+	}
 )
 
 func Flags() []cli.Flag {
 	return []cli.Flag{
 		NetworkFlag,
-		L1RpcFlag,
 		L1WsRpcFlag,
-		L2RPCFlag,
 		L2WsRpcFlag,
 		L1StandardBridgeFlag,
 		L2StandardBridgeFlag,
@@ -120,8 +111,9 @@ func Flags() []cli.Flag {
 		SlackUrlFlag,
 		L1ExplorerUrlFlag,
 		L2ExplorerUrlFlag,
-		OffFlag,
-		TokenAddressesFlag,
+		L1TokenAddressesFlag,
+		L2TokenAddressesFlag,
 		TonAddressFlag,
+		RedisAddressFlag,
 	}
 }

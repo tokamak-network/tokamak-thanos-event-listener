@@ -2,14 +2,14 @@ package erc20
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/bcclient"
 
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
-func FetchTokenInfo(client *ethclient.Client, tokenAddress string) (*types.Token, error) {
-	erc20Instance, err := NewErc20(common.HexToAddress(tokenAddress), client)
+func FetchTokenInfo(bcClient *bcclient.Client, tokenAddress string) (*types.Token, error) {
+	erc20Instance, err := NewErc20(common.HexToAddress(tokenAddress), bcClient.GetClient())
 	if err != nil {
 		log.GetLogger().Errorw("Failed to create erc20 instance", "error", err)
 		return nil, err

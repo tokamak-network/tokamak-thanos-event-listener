@@ -18,11 +18,11 @@ func (request *EventRequest) SerializeEventRequest() string {
 	return serializeEventRequestWithAddressAndABI(request.contractAddress, hashedABI)
 }
 
-func (request *EventRequest) GetRequestType() int {
+func (_ *EventRequest) GetRequestType() int {
 	return RequestEventType
 }
 
-func (request *EventRequest) Callback(v interface{}) {
+func (request *EventRequest) Callback(v any) {
 	if v, ok := v.(*types.Log); ok {
 		request.handler(v)
 	}

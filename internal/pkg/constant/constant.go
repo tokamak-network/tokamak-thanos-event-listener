@@ -3,6 +3,8 @@ package constant
 import (
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 )
 
@@ -18,3 +20,5 @@ var (
 		},
 	}
 )
+
+var ZeroHash = common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000000")
