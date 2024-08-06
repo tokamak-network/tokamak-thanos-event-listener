@@ -45,7 +45,6 @@ func startListener(ctx *cli.Context) error {
 		L2ExplorerUrl:    ctx.String(flags.L2ExplorerUrlFlagName),
 		L1TokenAddresses: ctx.StringSlice(flags.L1TokenAddresses),
 		L2TokenAddresses: ctx.StringSlice(flags.L2TokenAddresses),
-		TonAddress:       ctx.String(flags.TonAddressFlagName),
 		RedisConfig: redis.Config{
 			Addresses: ctx.String(flags.RedisAddressFlagName),
 		},

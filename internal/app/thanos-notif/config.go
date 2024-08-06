@@ -27,8 +27,6 @@ type Config struct {
 	L1TokenAddresses []string
 	L2TokenAddresses []string
 
-	TonAddress string
-
 	RedisConfig redis.Config
 }
 
@@ -55,10 +53,6 @@ func (c *Config) Validate() error {
 
 	if len(c.L1TokenAddresses) == 0 {
 		return errors.New("token addresses is required")
-	}
-
-	if c.TonAddress == "" {
-		return errors.New("ton address is required")
 	}
 
 	if c.RedisConfig.Addresses == "" {

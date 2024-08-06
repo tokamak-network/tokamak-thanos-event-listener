@@ -18,7 +18,6 @@ const (
 	L2ExplorerUrlFlagName    = "l2-explorer-url"
 	L1TokenAddresses         = "l1-token-addresses"
 	L2TokenAddresses         = "l2-token-addresses"
-	TonAddressFlagName       = "ton-address"
 	RedisAddressFlagName     = "redis-address"
 )
 
@@ -86,11 +85,6 @@ var (
 		Usage:   "List of L2 tokens address to get symbol and decimals",
 		EnvVars: []string{"L2_TOKEN_ADDRESSES"},
 	}
-	TonAddressFlag = &cli.StringFlag{
-		Name:    TonAddressFlagName,
-		Usage:   "Ton address",
-		EnvVars: []string{"TON_ADDRESS"},
-	}
 	RedisAddressFlag = &cli.StringFlag{
 		Name: RedisAddressFlagName,
 		EnvVars: []string{
@@ -113,7 +107,6 @@ func Flags() []cli.Flag {
 		L2ExplorerUrlFlag,
 		L1TokenAddressesFlag,
 		L2TokenAddressesFlag,
-		TonAddressFlag,
 		RedisAddressFlag,
 	}
 }
