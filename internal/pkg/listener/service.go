@@ -101,6 +101,7 @@ func (s *EventService) CanProcess(log *ethereumTypes.Log) bool {
 	if s.filter.Test(data) {
 		return false
 	}
+
 	s.filter.Add(data)
 	return true
 }
@@ -272,6 +273,10 @@ func (s *EventService) filterEventsAndNotify(_ context.Context, logs []ethereumT
 		request := s.RequestByKey(key)
 
 		if request == nil {
+			continue
+		}
+
+		if l.Removed {
 			continue
 		}
 
