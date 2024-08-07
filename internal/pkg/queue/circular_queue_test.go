@@ -30,3 +30,24 @@ func Test_CircularQueue(t *testing.T) {
 	}
 	assert.Equal(t, 64, count)
 }
+
+func Test_CircularQueue_Remove(t *testing.T) {
+	q := queue.NewCircularQueue[string](64)
+
+	for i := 0; i < 70; i++ {
+		q.Enqueue(strconv.Itoa(i))
+	}
+
+	q.Remove("68")
+	assert.Equal(t, false, q.Contains("68"))
+	assert.Equal(t, 63, q.Size())
+
+	q.Remove("69")
+	assert.Equal(t, false, q.Contains("69"))
+	assert.Equal(t, 62, q.Size())
+
+	q.RemoveAndEnqueue("70", "67")
+	assert.Equal(t, true, q.Contains("70"))
+	assert.Equal(t, false, q.Contains("67"))
+	assert.Equal(t, 62, q.Size())
+}

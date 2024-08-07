@@ -38,6 +38,44 @@ func (q *CircularQueue[T]) Enqueue(value T) {
 	q.uniqueData[value] = true
 }
 
+// RemoveAndEnqueue removes and adds an element to the end of the queue.
+// If the queue is full, it overwrites the oldest element.
+func (q *CircularQueue[T]) RemoveAndEnqueue(value T, removed T) {
+	q.Remove(removed)
+	q.Enqueue(value)
+}
+
+func (q *CircularQueue[T]) Remove(value T) {
+	if !q.Contains(value) {
+		return
+	}
+
+	// Find the index of the element to remove
+	var foundIndex int
+	for i := 0; i < q.count; i++ {
+		index := (q.front + i) % q.size
+		if q.data[index] == value {
+			foundIndex = index
+			break
+		}
+	}
+
+	// Shift elements to fill the gap
+	for i := foundIndex; i != q.rear; i = (i + 1) % q.size {
+		nextIndex := (i + 1) % q.size
+		q.data[i] = q.data[nextIndex]
+	}
+
+	// Clear the slot at the rear
+	var zeroValue T
+	q.data[q.rear] = zeroValue
+
+	// Update rear
+	q.rear = (q.rear - 1 + q.size) % q.size
+	q.count--
+	delete(q.uniqueData, value)
+}
+
 // Dequeue removes and returns the element at the front of the queue.
 func (q *CircularQueue[T]) Dequeue() (T, error) {
 	var zeroValue T
@@ -51,16 +89,6 @@ func (q *CircularQueue[T]) Dequeue() (T, error) {
 	q.count--
 
 	return value, nil
-}
-
-// GetHead returns the element at the front of the queue without removing it.
-func (q *CircularQueue[T]) GetHead() (T, error) {
-	var zeroValue T
-	if q.IsEmpty() {
-		return zeroValue, errors.New("queue is empty")
-	}
-
-	return q.data[q.front], nil
 }
 
 // Contains checks if a specified element exists in the queue.

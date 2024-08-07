@@ -11,11 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 )
 
 var (
@@ -34,16 +33,16 @@ type RequestSubscriber interface {
 
 type BlockKeeper interface {
 	Head(ctx context.Context) (*ethereumTypes.Header, error)
-	SetHead(ctx context.Context, header *ethereumTypes.Header) error
+	SetHead(ctx context.Context, newHeader *ethereumTypes.Header, replaceHash common.Hash) error
 	Contains(header *ethereumTypes.Header) bool
-	GetReorgHeaders(ctx context.Context, header *ethereumTypes.Header) ([]*ethereumTypes.Header, error)
+	GetReorgHeaders(ctx context.Context, header *ethereumTypes.Header) ([]*ethereumTypes.Header, []common.Hash, error)
 }
 
 type BlockChainSource interface {
 	SubscribeNewHead(ctx context.Context, newHeadCh chan<- *ethereumTypes.Header) (ethereum.Subscription, error)
 	BlockNumber(ctx context.Context) (uint64, error)
-	HeaderAtBlockNumber(ctx context.Context, blockNo uint64) (*ethereumTypes.Header, error)
 	GetLogs(ctx context.Context, blockHash common.Hash) ([]ethereumTypes.Log, error)
+	GetBlocks(ctx context.Context, withLogs bool, fromBlock, toBlock uint64) ([]*types.NewBlock, error)
 }
 
 type EventService struct {
@@ -252,7 +251,8 @@ func (s *EventService) handleNewBlock(ctx context.Context, newBlock *types.NewBl
 			s.l.Errorw("Failed to handle block", "err", err, "block", block)
 			return err
 		}
-		err = s.blockKeeper.SetHead(ctx, block.Header)
+
+		err = s.blockKeeper.SetHead(ctx, block.Header, block.ReorgedBlockHash)
 		if err != nil {
 			s.l.Errorw("Failed to set head on the keeper", "err", err, "block", block)
 			return err
@@ -302,7 +302,7 @@ func (s *EventService) syncOldBlocks(ctx context.Context, headCh chan *types.New
 
 	consumedBlockNo := consumingBlock.Number.Uint64()
 
-	if consumedBlockNo > onchainBlockNo {
+	if consumedBlockNo >= onchainBlockNo {
 		return nil
 	}
 
@@ -322,7 +322,7 @@ func (s *EventService) syncOldBlocks(ctx context.Context, headCh chan *types.New
 			toBlock = onchainBlockNo
 		}
 
-		blocks, err := s.getBlocks(ctx, fromBlock, toBlock)
+		blocks, err := s.bcClient.GetBlocks(ctx, true, fromBlock, toBlock)
 		if err != nil {
 			return err
 		}
@@ -336,73 +336,31 @@ func (s *EventService) syncOldBlocks(ctx context.Context, headCh chan *types.New
 	return nil
 }
 
-func (s *EventService) getBlocks(ctx context.Context, fromBlock, toBlock uint64) ([]*types.NewBlock, error) {
-	s.l.Infow("Fetch blocks info", "from_block", fromBlock, "to_block", toBlock)
-	totalBlocks := toBlock - fromBlock + 1
-
-	blocks := make([]*types.NewBlock, totalBlocks)
-
-	g, _ := errgroup.WithContext(ctx)
-	for index := uint64(0); index < totalBlocks; index++ {
-		index := index
-		blockNo := index + fromBlock
-
-		g.Go(func() error {
-			header, err := s.bcClient.HeaderAtBlockNumber(ctx, blockNo)
-			if err != nil {
-				s.l.Errorw("Failed to get block header", "err", err)
-				return err
-			}
-
-			logs, err := s.bcClient.GetLogs(ctx, header.Hash())
-			if err != nil {
-				s.l.Errorw("Failed to get block logs", "err", err)
-				return err
-			}
-
-			blocks[index] = &types.NewBlock{
-				Logs:   logs,
-				Header: header,
-			}
-
-			return nil
-		})
-	}
-
-	err := g.Wait()
-	if err != nil {
-		s.l.Errorw("Failed to get the block header", "err", err)
-
-		return nil, err
-	}
-
-	if len(blocks) == 0 {
-		return nil, nil
-	}
-
-	return blocks, nil
-}
-
 func (s *EventService) handleReorgBlocks(ctx context.Context, newHeader *ethereumTypes.Header) ([]*types.NewBlock, error) {
-	reorgedHeaders, err := s.blockKeeper.GetReorgHeaders(ctx, newHeader)
+	newBlocks, reorgedBlockHashes, err := s.blockKeeper.GetReorgHeaders(ctx, newHeader)
 	if err != nil {
 		s.l.Errorw("Failed to handle reorg blocks", "err", err)
 		return nil, err
 	}
 
-	if len(reorgedHeaders) == 0 {
+	if len(newBlocks) == 0 {
 		return nil, nil
 	}
+
+	if len(reorgedBlockHashes) != len(newBlocks) {
+		return nil, fmt.Errorf("reorged block numbers don't match")
+	}
+
 	var g errgroup.Group
 
-	reorgedBlocks := make([]*types.NewBlock, len(reorgedHeaders))
-	for i, reorgedHeader := range reorgedHeaders {
-		s.l.Infow("Detect reorg block", "block", reorgedHeader.Number.Uint64())
+	reorgedBlocks := make([]*types.NewBlock, len(newBlocks))
+	for i, newBlock := range newBlocks {
+		s.l.Infow("Detect reorg block", "block", newBlock.Number.Uint64())
 		i := i
-		reorgedHeader := reorgedHeader
+		newBlock := newBlock
 
 		g.Go(func() error {
-			blockHash := reorgedHeader.Hash()
+			blockHash := newBlock.Hash()
 			reorgedLogs, errLogs := s.bcClient.GetLogs(ctx, blockHash)
 			if errLogs != nil {
 				s.l.Errorw("Failed to get logs", "err", errLogs)
@@ -410,8 +368,9 @@ func (s *EventService) handleReorgBlocks(ctx context.Context, newHeader *ethereu
 			}
 
 			reorgedBlocks[i] = &types.NewBlock{
-				Header: reorgedHeader,
-				Logs:   reorgedLogs,
+				Header:           newBlock,
+				Logs:             reorgedLogs,
+				ReorgedBlockHash: reorgedBlockHashes[i],
 			}
 
 			return nil
