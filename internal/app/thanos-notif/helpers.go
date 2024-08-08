@@ -1,16 +1,18 @@
 package thanosnotif
 
 import (
+	"errors"
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/bcclient"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/erc20"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
+
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
-	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindings"
 )
 
-func (app *App) formatAmount(amount *big.Int, tokenDecimals int) string {
+func formatAmount(amount *big.Int, tokenDecimals int) string {
 	amountFloat := new(big.Float).SetInt(amount)
 	amountFloat.Quo(amountFloat, new(big.Float).SetInt(big.NewInt(0).Exp(big.NewInt(10), big.NewInt(int64(tokenDecimals)), nil)))
 	formattedAmount := strings.TrimRight(strings.TrimRight(amountFloat.Text('f', tokenDecimals+1), "0"), ".")
@@ -18,46 +20,24 @@ func (app *App) formatAmount(amount *big.Int, tokenDecimals int) string {
 	return formattedAmount
 }
 
-func (app *App) getBridgeFilterers() (l1BridgeFilterer *bindings.L1StandardBridgeFilterer, l2BridgeFilterer *bindings.L2StandardBridgeFilterer, err error) {
-	client, err := ethclient.Dial(app.cfg.L1Rpc)
-	if err != nil {
-		log.GetLogger().Errorw("Failed to connect to client", "error", err)
-		return nil, nil, err
+func fetchTokensInfo(bcClient *bcclient.Client, tokenAddresses []string) (map[string]*types.Token, error) {
+	tokenInfoMap := make(map[string]*types.Token)
+	for _, tokenAddress := range tokenAddresses {
+		tokenInfo, err := erc20.FetchTokenInfo(bcClient, tokenAddress)
+		if err != nil {
+			log.GetLogger().Errorw("Failed to fetch token info", "error", err, "address", tokenAddress)
+			return nil, err
+		}
+
+		if tokenInfo == nil {
+			log.GetLogger().Errorw("Token info empty", "address", tokenAddress)
+			return nil, errors.New("token info is empty")
+		}
+
+		log.GetLogger().Infow("Got token info", "token", tokenInfo)
+
+		tokenInfoMap[tokenAddress] = tokenInfo
 	}
 
-	l1BridgeFilterer, err = bindings.NewL1StandardBridgeFilterer(common.HexToAddress(app.cfg.L1StandardBridge), client)
-	if err != nil {
-		log.GetLogger().Errorw("L1StandardBridgeFilterer instance fail", "error", err)
-		return nil, nil, err
-	}
-
-	l2BridgeFilterer, err = bindings.NewL2StandardBridgeFilterer(common.HexToAddress(app.cfg.L2StandardBridge), client)
-	if err != nil {
-		log.GetLogger().Errorw("L2StandardBridgeFilterer instance fail", "error", err)
-		return nil, nil, err
-	}
-
-	return l1BridgeFilterer, l2BridgeFilterer, nil
-}
-
-func (app *App) getUsdcBridgeFilterers() (l1UsdcBridgeFilterer *bindings.L1UsdcBridgeFilterer, l2UsdcBridgeFilterer *bindings.L2UsdcBridgeFilterer, err error) {
-	client, err := ethclient.Dial(app.cfg.L1Rpc)
-	if err != nil {
-		log.GetLogger().Errorw("Failed to connect to client", "error", err)
-		return nil, nil, err
-	}
-
-	l1UsdcBridgeFilterer, err = bindings.NewL1UsdcBridgeFilterer(common.HexToAddress(app.cfg.L1UsdcBridge), client)
-	if err != nil {
-		log.GetLogger().Errorw("L1UsdcBridgeFilterer instance fail", "error", err)
-		return nil, nil, err
-	}
-
-	l2UsdcBridgeFilterer, err = bindings.NewL2UsdcBridgeFilterer(common.HexToAddress(app.cfg.L2UsdcBridge), client)
-	if err != nil {
-		log.GetLogger().Errorw("L2UsdcBridgeFilterer instance fail", "error", err)
-		return nil, nil, err
-	}
-
-	return l1UsdcBridgeFilterer, l2UsdcBridgeFilterer, nil
+	return tokenInfoMap, nil
 }

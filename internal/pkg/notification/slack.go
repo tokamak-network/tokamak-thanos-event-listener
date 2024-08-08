@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
@@ -24,10 +23,6 @@ type SlackNotificationService struct {
 
 func MakeSlackNotificationService(url string, numOfRetry int) *SlackNotificationService {
 	return &SlackNotificationService{url: url, numOfRetry: numOfRetry, off: false}
-}
-
-func MakeDefaultSlackNotificationService() *SlackNotificationService {
-	return &SlackNotificationService{url: os.Getenv("SLACK_URL"), numOfRetry: 5, off: os.Getenv("OFF") == "1"}
 }
 
 func (slackNotificationService *SlackNotificationService) Enable() {
