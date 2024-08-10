@@ -25,7 +25,7 @@ type Client struct {
 
 func New(ctx context.Context, rpcURL string) (*Client, error) {
 	httpClient := &http.Client{
-		Timeout: 3 * time.Second,
+		Timeout: 10 * time.Second,
 	}
 	rpcClient, err := rpc.DialOptions(ctx, rpcURL, rpc.WithHTTPClient(httpClient))
 	if err != nil {
@@ -71,15 +71,13 @@ func (c *Client) HeaderAtBlockNumber(ctx context.Context, blockNo uint64) (*ethe
 }
 
 func (c *Client) GetLogs(ctx context.Context, blockHash common.Hash) ([]ethereumTypes.Log, error) {
-	timeOutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
 
 	query := ethereum.FilterQuery{
 		BlockHash: &blockHash,
 	}
 
 	// Get the logs
-	logs, err := c.defaultClient.FilterLogs(timeOutCtx, query)
+	logs, err := c.defaultClient.FilterLogs(ctx, query)
 	if err != nil {
 		log.GetLogger().Errorw("Failed to retrieve logs", "blockHash", blockHash.Hex(), "err", err)
 		return nil, err

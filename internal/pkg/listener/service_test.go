@@ -80,21 +80,19 @@ func Test_handleReorgBlock(t *testing.T) {
 
 	listenerSrv, err := MakeService("test-event-listener", bcClient, keeper)
 	require.NoError(t, err)
-	block, err := bcClient.GetHeader(ctx)
+	header, err := bcClient.GetHeader(ctx)
 	require.NoError(t, err)
 
-	blocks, err := listenerSrv.handleReorgBlocks(ctx, block)
+	err = keeper.SetHead(ctx, header, constant.ZeroHash)
 	require.NoError(t, err)
-
-	assert.Len(t, blocks, 0)
 
 	// pass through two blocks
 	time.Sleep(24 * time.Second)
 
-	block, err = bcClient.GetHeader(ctx)
+	header, err = bcClient.GetHeader(ctx)
 	require.NoError(t, err)
 
-	blocks, err = listenerSrv.handleReorgBlocks(ctx, block)
+	blocks, err := listenerSrv.handleReorgBlocks(ctx, header)
 	require.NoError(t, err)
 
 	assert.Equal(t, true, len(blocks) > 0)
