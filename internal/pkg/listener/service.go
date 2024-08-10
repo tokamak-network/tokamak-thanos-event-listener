@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -139,9 +140,10 @@ func (s *EventService) Start(ctx context.Context) error {
 		return err
 	}
 
-	s.sub = event.ResubscribeErr(10, func(ctx context.Context, err error) (event.Subscription, error) {
+	s.sub = event.ResubscribeErr(5*time.Second, func(ctx context.Context, err error) (event.Subscription, error) {
 		if err != nil {
 			s.l.Errorw("Failed to re-subscribe the event", "err", err)
+			time.Sleep(1 * time.Second)
 		}
 
 		return s.subscribeNewHead(ctx)
