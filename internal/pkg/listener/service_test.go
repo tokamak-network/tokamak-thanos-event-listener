@@ -86,7 +86,7 @@ func Test_handleReorgBlock(t *testing.T) {
 	err = keeper.SetHead(ctx, header, constant.ZeroHash)
 	require.NoError(t, err)
 
-	// pass through two blocks
+	// This causes the gap between the current head in the keeper and the latest head at least two blocks
 	time.Sleep(24 * time.Second)
 
 	header, err = bcClient.GetHeader(ctx)
