@@ -35,7 +35,9 @@ func startListener(ctx *cli.Context) error {
 	config := &thanosnotif.Config{
 		Network:          ctx.String(flags.NetworkFlagName),
 		L1WsRpc:          ctx.String(flags.L1WsRpcUrlFlagName),
+		L1HttpRpc:        ctx.String(flags.L1HttpRpcUrlFlagName),
 		L2WsRpc:          ctx.String(flags.L2WsRpcUrlFlagName),
+		L2HttpRpc:        ctx.String(flags.L2HttpRpcUrlFlagName),
 		L1StandardBridge: ctx.String(flags.L1StandardBridgeFlagName),
 		L2StandardBridge: ctx.String(flags.L2StandardBridgeFlagName),
 		L1UsdcBridge:     ctx.String(flags.L1UsdcBridgeFlagName),

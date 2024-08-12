@@ -9,9 +9,11 @@ import (
 type Config struct {
 	Network string
 
-	L1WsRpc string
+	L1HttpRpc string
+	L1WsRpc   string
 
-	L2WsRpc string
+	L2HttpRpc string
+	L2WsRpc   string
 
 	L1StandardBridge string
 	L2StandardBridge string
@@ -35,8 +37,16 @@ func (c *Config) Validate() error {
 		return errors.New("l1 ws rpc address is required")
 	}
 
+	if c.L1HttpRpc == "" {
+		return errors.New("l1 http rpc address is required")
+	}
+
 	if c.L2WsRpc == "" {
 		return errors.New("l2 ws rpc address is required")
+	}
+
+	if c.L2HttpRpc == "" {
+		return errors.New("l2 http rpc address is required")
 	}
 
 	if c.L1StandardBridge == "" {

@@ -10,8 +10,9 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/testutil"
 )
 
-const (
-	rpcUrl = "ws://sepolia.rpc.tokamak.network:8546"
+var (
+	wsUrl   = "ws://sepolia.rpc.tokamak.network:8546"
+	httpUrl = "https://sepolia.rpc.tokamak.network"
 )
 
 func TestBlockKeeper_initWithExistingBlockHash(t *testing.T) {
@@ -19,7 +20,7 @@ func TestBlockKeeper_initWithExistingBlockHash(t *testing.T) {
 
 	syncBlockKeeper := &testutil.SyncBlockInMemKeeper{}
 
-	bcClient, err := bcclient.New(ctx, rpcUrl)
+	bcClient, err := bcclient.New(ctx, wsUrl, httpUrl)
 	require.NoError(t, err)
 
 	blockNo, err := bcClient.BlockNumber(ctx)
@@ -45,7 +46,7 @@ func TestBlockKeeper_initWithoutExistingBlockHash(t *testing.T) {
 
 	syncBlockKeeper := &testutil.SyncBlockInMemKeeper{}
 
-	bcClient, err := bcclient.New(ctx, rpcUrl)
+	bcClient, err := bcclient.New(ctx, wsUrl, httpUrl)
 	require.NoError(t, err)
 
 	currentBlock, err := bcClient.GetHeader(ctx)
@@ -64,7 +65,7 @@ func TestBlockKeeper_getReorgBlocks(t *testing.T) {
 
 	syncBlockKeeper := &testutil.SyncBlockInMemKeeper{}
 
-	bcClient, err := bcclient.New(ctx, rpcUrl)
+	bcClient, err := bcclient.New(ctx, wsUrl, httpUrl)
 	require.NoError(t, err)
 
 	blockNo, err := bcClient.BlockNumber(ctx)

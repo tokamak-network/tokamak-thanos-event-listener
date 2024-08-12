@@ -11,6 +11,11 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 )
 
+var (
+	wsUrl   = "ws://sepolia.rpc.tokamak.network:8546"
+	httpUrl = "https://sepolia.rpc.tokamak.network"
+)
+
 func Test_FetchTokenInfo(t *testing.T) {
 	ctx := context.Background()
 
@@ -19,7 +24,7 @@ func Test_FetchTokenInfo(t *testing.T) {
 		ContractAddress string
 	}
 
-	bcClient, err := bcclient.New(ctx, "https://sepolia.rpc.tokamak.network")
+	bcClient, err := bcclient.New(ctx, wsUrl, httpUrl)
 	require.NoError(t, err)
 
 	var tests = testCases{

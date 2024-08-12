@@ -15,8 +15,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	rpcUrl = "ws://sepolia.rpc.tokamak.network:8546"
+var (
+	wsUrl   = "ws://sepolia.rpc.tokamak.network:8546"
+	httpUrl = "https://sepolia.rpc.tokamak.network"
 )
 
 func Test_syncOldBlocks(t *testing.T) {
@@ -25,7 +26,7 @@ func Test_syncOldBlocks(t *testing.T) {
 	)
 	ctx := context.Background()
 
-	bcClient, err := bcclient.New(ctx, rpcUrl)
+	bcClient, err := bcclient.New(ctx, wsUrl, httpUrl)
 	require.NoError(t, err)
 
 	syncBlockKeeper := &testutil.SyncBlockInMemKeeper{}
@@ -71,7 +72,7 @@ func Test_syncOldBlocks(t *testing.T) {
 func Test_handleReorgBlock(t *testing.T) {
 	ctx := context.Background()
 
-	bcClient, err := bcclient.New(ctx, rpcUrl)
+	bcClient, err := bcclient.New(ctx, wsUrl, httpUrl)
 	require.NoError(t, err)
 
 	syncBlockKeeper := &testutil.SyncBlockInMemKeeper{}

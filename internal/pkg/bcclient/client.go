@@ -20,19 +20,23 @@ import (
 
 type Client struct {
 	defaultClient *ethclient.Client
+	wsClient      *ethclient.Client
 	chainID       *big.Int
 }
 
-func New(ctx context.Context, rpcURL string) (*Client, error) {
+func New(ctx context.Context, wsURL, rpcURL string) (*Client, error) {
 	httpClient := &http.Client{
 		Timeout: 10 * time.Second,
 	}
-	rpcClient, err := rpc.DialOptions(ctx, rpcURL, rpc.WithHTTPClient(httpClient))
+	ethClient, err := initEthClient(ctx, rpcURL, httpClient)
 	if err != nil {
 		return nil, err
 	}
 
-	ethClient := ethclient.NewClient(rpcClient)
+	wsClient, err := initEthClient(ctx, wsURL, httpClient)
+	if err != nil {
+		return nil, err
+	}
 
 	chainID, err := ethClient.ChainID(ctx)
 	if err != nil {
@@ -41,8 +45,19 @@ func New(ctx context.Context, rpcURL string) (*Client, error) {
 
 	return &Client{
 		defaultClient: ethClient,
+		wsClient:      wsClient,
 		chainID:       chainID,
 	}, nil
+}
+
+func initEthClient(ctx context.Context, url string, httpClient *http.Client) (*ethclient.Client, error) {
+	rpcClient, err := rpc.DialOptions(ctx, url, rpc.WithHTTPClient(httpClient))
+	if err != nil {
+		return nil, err
+	}
+
+	ethClient := ethclient.NewClient(rpcClient)
+	return ethClient, nil
 }
 
 func (c *Client) GetClient() *ethclient.Client {
@@ -50,7 +65,7 @@ func (c *Client) GetClient() *ethclient.Client {
 }
 
 func (c *Client) SubscribeNewHead(ctx context.Context, newHeadCh chan<- *ethereumTypes.Header) (ethereum.Subscription, error) {
-	return c.defaultClient.SubscribeNewHead(ctx, newHeadCh)
+	return c.wsClient.SubscribeNewHead(ctx, newHeadCh)
 }
 
 func (c *Client) BlockNumber(ctx context.Context) (uint64, error) {
