@@ -15,7 +15,7 @@ on:
       - "*"
 
 env:
-  SERVICE: node-proxy
+  SERVICE: thanos-event-listener
 
 jobs:
   prepare:
