@@ -42,13 +42,13 @@ func New(ctx context.Context, cfg *Config) (*App, error) {
 		return nil, err
 	}
 
-	l1Client, err := bcclient.New(ctx, cfg.L1WsRpc)
+	l1Client, err := bcclient.New(ctx, cfg.L1WsRpc, cfg.L1HttpRpc)
 	if err != nil {
 		log.GetLogger().Errorw("Failed to create L1 client", "error", err)
 		return nil, err
 	}
 
-	l2Client, err := bcclient.New(ctx, cfg.L2WsRpc)
+	l2Client, err := bcclient.New(ctx, cfg.L2WsRpc, cfg.L2HttpRpc)
 	if err != nil {
 		log.GetLogger().Errorw("Failed to create L2 client", "error", err)
 		return nil, err

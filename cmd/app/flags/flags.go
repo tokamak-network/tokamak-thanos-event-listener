@@ -7,8 +7,10 @@ import (
 
 const (
 	NetworkFlagName          = "network"
+	L1HttpRpcUrlFlagName     = "l1-http-rpc-url"
 	L1WsRpcUrlFlagName       = "l1-ws-rpc"
 	L2WsRpcUrlFlagName       = "l2-ws-rpc"
+	L2HttpRpcUrlFlagName     = "l2-http-rpc"
 	L1StandardBridgeFlagName = "l1-standard-bridge-address"
 	L2StandardBridgeFlagName = "l2-standard-bridge-address"
 	L1UsdcBridgeFlagName     = "l1-usdc-bridge-address"
@@ -27,6 +29,12 @@ var (
 		Usage:   "Network name",
 		EnvVars: []string{"NETWORK"},
 	}
+	L1HttpRpcFlag = &cli.StringFlag{
+		Name:    L1HttpRpcUrlFlagName,
+		Usage:   "L1 HTTP RPC url",
+		Value:   "http://localhost:8545",
+		EnvVars: []string{"L1_HTTP_RPC"},
+	}
 	L1WsRpcFlag = &cli.StringFlag{
 		Name:    L1WsRpcUrlFlagName,
 		Usage:   "L1 RPC url",
@@ -38,6 +46,12 @@ var (
 		Usage:   "L2 Ws RPC url",
 		Value:   "ws://localhost:9546",
 		EnvVars: []string{"L2_WS_RPC"},
+	}
+	L2HttpRpcFlag = &cli.StringFlag{
+		Name:    L2HttpRpcUrlFlagName,
+		Usage:   "L2 HTTP RPC url",
+		Value:   "http://localhost:9545",
+		EnvVars: []string{"L2_HTTP_RPC"},
 	}
 	L1StandardBridgeFlag = &cli.StringFlag{
 		Name:    L1StandardBridgeFlagName,
@@ -97,7 +111,9 @@ func Flags() []cli.Flag {
 	return []cli.Flag{
 		NetworkFlag,
 		L1WsRpcFlag,
+		L1HttpRpcFlag,
 		L2WsRpcFlag,
+		L2HttpRpcFlag,
 		L1StandardBridgeFlag,
 		L2StandardBridgeFlag,
 		L1UsdcBridgeFlag,

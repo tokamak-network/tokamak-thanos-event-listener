@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -139,9 +140,10 @@ func (s *EventService) Start(ctx context.Context) error {
 		return err
 	}
 
-	s.sub = event.ResubscribeErr(10, func(ctx context.Context, err error) (event.Subscription, error) {
+	s.sub = event.ResubscribeErr(5*time.Second, func(ctx context.Context, err error) (event.Subscription, error) {
 		if err != nil {
 			s.l.Errorw("Failed to re-subscribe the event", "err", err)
+			time.Sleep(1 * time.Second)
 		}
 
 		return s.subscribeNewHead(ctx)
@@ -315,7 +317,7 @@ func (s *EventService) syncOldBlocks(ctx context.Context, headCh chan *types.New
 
 	blocksNeedToConsume := onchainBlockNo - consumedBlockNo
 
-	totalBatches := int(math.Ceil(float64(blocksNeedToConsume) / float64(MaxBatchBlocksSize)))
+	totalBatches := calculateBatchBlocks(int(blocksNeedToConsume))
 
 	s.l.Infow("Total batches", "total", totalBatches)
 	skip := consumedBlockNo + 1
@@ -356,35 +358,32 @@ func (s *EventService) handleReorgBlocks(ctx context.Context, newHeader *ethereu
 		return nil, fmt.Errorf("reorged block numbers don't match")
 	}
 
-	var g errgroup.Group
+	reorgedBlocks := make([]*types.NewBlock, 0)
+	totalBatches := calculateBatchBlocks(len(newBlocks))
 
-	reorgedBlocks := make([]*types.NewBlock, len(newBlocks))
-	for i, newBlock := range newBlocks {
-		s.l.Infow("Detect reorg block", "block", newBlock.Number.Uint64())
-		i := i
-		newBlock := newBlock
+	s.l.Infow("Total batches", "total", totalBatches)
+	skip := newBlocks[0].Number.Uint64()
+	to := newBlocks[len(newBlocks)-1].Number.Uint64()
+	idx := uint64(0)
+	for i := 0; i < totalBatches; i++ {
+		fromBlock := skip
+		toBlock := skip + MaxBatchBlocksSize - 1
 
-		g.Go(func() error {
-			blockHash := newBlock.Hash()
-			reorgedLogs, errLogs := s.bcClient.GetLogs(ctx, blockHash)
-			if errLogs != nil {
-				s.l.Errorw("Failed to get logs", "err", errLogs)
-				return errLogs
-			}
+		if toBlock > to {
+			toBlock = to
+		}
 
-			reorgedBlocks[i] = &types.NewBlock{
-				Header:           newBlock,
-				Logs:             reorgedLogs,
-				ReorgedBlockHash: reorgedBlockHashes[i],
-			}
+		blocks, err := s.bcClient.GetBlocks(ctx, true, fromBlock, toBlock)
+		if err != nil {
+			return nil, err
+		}
 
-			return nil
-		})
-	}
+		for j, block := range blocks {
+			block.ReorgedBlockHash = reorgedBlockHashes[int(idx)+j]
+		}
 
-	err = g.Wait()
-	if err != nil {
-		return nil, err
+		idx += toBlock - fromBlock + 1
+		reorgedBlocks = append(reorgedBlocks, blocks...)
 	}
 
 	return reorgedBlocks, nil
@@ -393,4 +392,8 @@ func (s *EventService) handleReorgBlocks(ctx context.Context, newHeader *ethereu
 func serializeEventRequestWithAddressAndABI(address common.Address, hashedABI common.Hash) string {
 	result := fmt.Sprintf("%s:%s", address.String(), hashedABI)
 	return result
+}
+
+func calculateBatchBlocks(blocks int) int {
+	return int(math.Ceil(float64(blocks) / float64(MaxBatchBlocksSize)))
 }
