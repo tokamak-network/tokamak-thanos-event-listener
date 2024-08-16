@@ -86,19 +86,25 @@ func (c *Client) HeaderAtBlockNumber(ctx context.Context, blockNo uint64) (*ethe
 }
 
 func (c *Client) GetLogs(ctx context.Context, blockHash common.Hash) ([]ethereumTypes.Log, error) {
+	var err error
+	var logs []ethereumTypes.Log
+	for i := 0; i < 3; i++ {
+		query := ethereum.FilterQuery{
+			BlockHash: &blockHash,
+		}
 
-	query := ethereum.FilterQuery{
-		BlockHash: &blockHash,
+		// Get the logs
+		logs, err = c.defaultClient.FilterLogs(ctx, query)
+		if err != nil {
+			log.GetLogger().Errorw("Failed to retrieve logs", "err", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		return logs, nil
 	}
 
-	// Get the logs
-	logs, err := c.defaultClient.FilterLogs(ctx, query)
-	if err != nil {
-		log.GetLogger().Errorw("Failed to retrieve logs", "blockHash", blockHash.Hex(), "err", err)
-		return nil, err
-	}
-
-	return logs, nil
+	return nil, err
 }
 
 func (c *Client) HeaderAtBlockHash(ctx context.Context, blockHash common.Hash) (*ethereumTypes.Header, error) {
