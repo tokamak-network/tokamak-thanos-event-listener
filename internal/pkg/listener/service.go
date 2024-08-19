@@ -362,15 +362,14 @@ func (s *EventService) handleReorgBlocks(ctx context.Context, newHeader *ethereu
 	totalBatches := calculateBatchBlocks(len(newBlocks))
 
 	s.l.Infow("Total batches", "total", totalBatches)
-	skip := newBlocks[0].Number.Uint64()
-	to := newBlocks[len(newBlocks)-1].Number.Uint64()
+	fromBlock := newBlocks[0].Number.Uint64()
+	lastBlock := newBlocks[len(newBlocks)-1].Number.Uint64()
 	idx := uint64(0)
 	for i := 0; i < totalBatches; i++ {
-		fromBlock := skip
-		toBlock := skip + MaxBatchBlocksSize - 1
+		toBlock := fromBlock + MaxBatchBlocksSize - 1
 
-		if toBlock > to {
-			toBlock = to
+		if toBlock > lastBlock {
+			toBlock = lastBlock
 		}
 
 		blocks, err := s.bcClient.GetBlocks(ctx, true, fromBlock, toBlock)
@@ -381,9 +380,10 @@ func (s *EventService) handleReorgBlocks(ctx context.Context, newHeader *ethereu
 		for j, block := range blocks {
 			block.ReorgedBlockHash = reorgedBlockHashes[int(idx)+j]
 		}
-
-		idx += toBlock - fromBlock + 1
 		reorgedBlocks = append(reorgedBlocks, blocks...)
+
+		idx += uint64(len(blocks))
+		fromBlock = toBlock + 1
 	}
 
 	return reorgedBlocks, nil
