@@ -171,7 +171,7 @@ func (p *App) depositUsdcInitiatedEvent(vLog *ethereumTypes.Log) (string, string
 	return title, text, nil
 }
 
-func (p *App) DepositUsdcFinalizedEvent(vLog *ethereumTypes.Log) (string, string, error) {
+func (p *App) depositUsdcFinalizedEvent(vLog *ethereumTypes.Log) (string, string, error) {
 	log.GetLogger().Infow("Got L2 USDC Deposit Event", "event", vLog)
 
 	_, l2UsdcBridgeFilterer, err := p.getUSDCBridgeFilterers()

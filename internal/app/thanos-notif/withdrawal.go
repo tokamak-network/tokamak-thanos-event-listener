@@ -143,7 +143,7 @@ func (p *App) withdrawalInitiatedEvent(vLog *ethereumTypes.Log) (string, string,
 	return title, text, nil
 }
 
-func (p *App) withdrawalFinalizedEvent(vLog *ethereumTypes.Log) (string, string, error) {
+func (p *App) withdrawalUsdcFinalizedEvent(vLog *ethereumTypes.Log) (string, string, error) {
 	log.GetLogger().Infow("Got L1 USDC Withdrawal Event", "event", vLog)
 
 	l1UsdcBridgeFilterer, _, err := p.getUSDCBridgeFilterers()
@@ -174,7 +174,7 @@ func (p *App) withdrawalFinalizedEvent(vLog *ethereumTypes.Log) (string, string,
 	return title, text, nil
 }
 
-func (p *App) WithdrawalUsdcInitiatedEvent(vLog *ethereumTypes.Log) (string, string, error) {
+func (p *App) withdrawalUsdcInitiatedEvent(vLog *ethereumTypes.Log) (string, string, error) {
 	log.GetLogger().Infow("Got L2 USDC Withdrawal Event", "event", vLog)
 
 	_, l2UsdcBridgeFilterer, err := p.getUSDCBridgeFilterers()

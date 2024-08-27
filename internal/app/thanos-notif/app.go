@@ -147,7 +147,7 @@ func (p *App) initL1Listener(ctx context.Context, slackNotifier *notification.Sl
 
 	// L1UsdcBridge ERC20 deposit and withdrawal
 	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1UsdcBridge, ERC20DepositInitiatedEventABI, p.depositUsdcInitiatedEvent))
-	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1UsdcBridge, ERC20WithdrawalFinalizedEventABI, p.withdrawalFinalizedEvent))
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1UsdcBridge, ERC20WithdrawalFinalizedEventABI, p.withdrawalUsdcFinalizedEvent))
 
 	return l1Service, nil
 }
@@ -171,8 +171,8 @@ func (p *App) initL2Listener(ctx context.Context, slackNotifier *notification.Sl
 	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, p.withdrawalInitiatedEvent))
 
 	// L2UsdcBridge ERC20 deposit and withdrawal
-	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2UsdcBridge, DepositFinalizedEventABI, p.DepositUsdcFinalizedEvent))
-	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2UsdcBridge, WithdrawalInitiatedEventABI, p.WithdrawalUsdcInitiatedEvent))
+	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2UsdcBridge, DepositFinalizedEventABI, p.depositUsdcFinalizedEvent))
+	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2UsdcBridge, WithdrawalInitiatedEventABI, p.withdrawalUsdcInitiatedEvent))
 
 	return l2Service, nil
 }
