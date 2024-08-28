@@ -4,8 +4,10 @@ import (
 	"fmt"
 
 	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindings"
+
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/erc20"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
 func (p *App) depositETHInitiatedEvent(vLog *ethereumTypes.Log) (string, string, error) {
@@ -63,8 +65,15 @@ func (p *App) depositERC20InitiatedEvent(vLog *ethereumTypes.Log) (string, strin
 	l1Token := erc20Dep.L1Token
 	l1TokenInfo, found := p.l1TokensInfo[l1Token.Hex()]
 	if !found {
-		log.GetLogger().Errorw("Token info not found for address", "l1Token", l1Token.Hex())
-		return "", "", err
+		newToken, err := erc20.FetchTokenInfo(p.l1Client, l1Token.Hex())
+		if err != nil || newToken == nil {
+			log.GetLogger().Errorw("Token info not found for address", "l1Token", l1Token.Hex())
+			return "", "", err
+		}
+		l1TokenInfo = newToken
+		p.mu.Lock()
+		p.l1TokensInfo[l1Token.Hex()] = l1TokenInfo
+		p.mu.Unlock()
 	}
 
 	tokenSymbol := l1TokenInfo.Symbol
@@ -114,8 +123,15 @@ func (p *App) depositFinalizedEvent(vLog *ethereumTypes.Log) (string, string, er
 
 	l2TokenInfo, found := p.l2TokensInfo[l2Token.Hex()]
 	if !found {
-		log.GetLogger().Errorw("Token info not found for address", "l2Token", l2Token.Hex())
-		return "", "", err
+		newToken, err := erc20.FetchTokenInfo(p.l2Client, l2Token.Hex())
+		if err != nil || newToken == nil {
+			log.GetLogger().Errorw("Token info not found for address", "l2Token", l2Token.Hex())
+			return "", "", err
+		}
+		l2TokenInfo = newToken
+		p.mu.Lock()
+		p.l2TokensInfo[l2Token.Hex()] = l2TokenInfo
+		p.mu.Unlock()
 	}
 
 	amount := formatAmount(l2Dep.Amount, l2TokenInfo.Decimals)
