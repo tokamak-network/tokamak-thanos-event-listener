@@ -21,6 +21,7 @@ const (
 	L1TokenAddresses         = "l1-token-addresses"
 	L2TokenAddresses         = "l2-token-addresses"
 	RedisAddressFlagName     = "redis-address"
+	RedisDBFlagName          = "redis-db"
 )
 
 var (
@@ -105,6 +106,12 @@ var (
 			"REDIS_ADDRESS",
 		},
 	}
+	RedisDBFlag = &cli.IntFlag{
+		Name: RedisDBFlagName,
+		EnvVars: []string{
+			"REDIS_DB",
+		},
+	}
 )
 
 func Flags() []cli.Flag {
@@ -124,5 +131,6 @@ func Flags() []cli.Flag {
 		L1TokenAddressesFlag,
 		L2TokenAddressesFlag,
 		RedisAddressFlag,
+		RedisDBFlag,
 	}
 }
