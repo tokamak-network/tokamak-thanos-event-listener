@@ -3,14 +3,15 @@ package thanosnotif
 import (
 	"context"
 	"fmt"
-
-	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/redis"
-	"golang.org/x/sync/errgroup"
+	"sync"
 
 	redislib "github.com/go-redis/redis/v8"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/bcclient"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/listener"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/notification"
+	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/redis"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/repository"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
@@ -33,6 +34,7 @@ type App struct {
 	l2Listener   *listener.EventService
 	l1Client     *bcclient.Client
 	l2Client     *bcclient.Client
+	mu           sync.Mutex
 }
 
 func New(ctx context.Context, cfg *Config) (*App, error) {
