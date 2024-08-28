@@ -17,7 +17,7 @@ func New(ctx context.Context, redisConfig Config) (redis.UniversalClient, error)
 	redisClient := redis.NewUniversalClient(&redis.UniversalOptions{
 		Password: redisConfig.Password,
 		Addrs:    redisAddresses,
-		DB:       0,
+		DB:       redisConfig.DB,
 	})
 
 	if _, err := redisClient.Ping(ctx).Result(); err != nil {

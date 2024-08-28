@@ -49,6 +49,7 @@ func startListener(ctx *cli.Context) error {
 		L2TokenAddresses: ctx.StringSlice(flags.L2TokenAddresses),
 		RedisConfig: redis.Config{
 			Addresses: ctx.String(flags.RedisAddressFlagName),
+			DB:        ctx.Int(flags.RedisDBFlagName),
 		},
 	}
 

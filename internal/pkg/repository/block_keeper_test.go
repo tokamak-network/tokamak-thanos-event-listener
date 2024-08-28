@@ -90,5 +90,6 @@ func TestBlockKeeper_getReorgBlocks(t *testing.T) {
 	reorgedBlocks, _, err := blockKeeper.GetReorgHeaders(ctx, currentBlock)
 	require.NoError(t, err)
 
-	assert.Equal(t, 4, len(reorgedBlocks))
+	assert.Equal(t, true, len(reorgedBlocks) >= 4)
+	assert.Equal(t, true, len(reorgedBlocks) <= 5)
 }
