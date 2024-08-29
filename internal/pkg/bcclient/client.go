@@ -51,7 +51,10 @@ func New(ctx context.Context, wsURL, rpcURL string) (*Client, error) {
 }
 
 func initEthClient(ctx context.Context, url string, httpClient *http.Client) (*ethclient.Client, error) {
-	rpcClient, err := rpc.DialOptions(ctx, url, rpc.WithHTTPClient(httpClient))
+	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	rpcClient, err := rpc.DialOptions(ctxTimeout, url, rpc.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, err
 	}

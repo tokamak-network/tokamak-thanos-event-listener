@@ -23,7 +23,8 @@ var (
 )
 
 const (
-	MaxBatchBlocksSize = 10
+	MaxBatchBlocksSize    = 10
+	defaultRetryThreshold = 5
 )
 
 type RequestSubscriber interface {
@@ -140,10 +141,16 @@ func (s *EventService) Start(ctx context.Context) error {
 		return err
 	}
 
+	retried := uint64(0)
 	s.sub = event.ResubscribeErr(5*time.Second, func(ctx context.Context, err error) (event.Subscription, error) {
 		if err != nil {
+			retried++
 			s.l.Errorw("Failed to re-subscribe the event", "err", err)
-			time.Sleep(1 * time.Second)
+
+			if retried >= defaultRetryThreshold {
+				s.l.Fatalw("Can't connect subscription", "err", err)
+			}
+			time.Sleep(5 * time.Second)
 		}
 
 		return s.subscribeNewHead(ctx)
