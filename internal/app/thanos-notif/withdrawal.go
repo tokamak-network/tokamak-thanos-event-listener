@@ -118,10 +118,6 @@ func (p *App) withdrawalInitiatedEvent(vLog *ethereumTypes.Log) (string, string,
 		Amount:  event.Amount,
 	}
 
-	// get symbol and decimals
-	var tokenSymbol string
-	var tokenDecimals int
-
 	l2Token := l2With.L2Token
 
 	l2TokenInfo, found := p.l2TokensInfo[l2Token.Hex()]
@@ -137,6 +133,12 @@ func (p *App) withdrawalInitiatedEvent(vLog *ethereumTypes.Log) (string, string,
 		p.mu.Unlock()
 	}
 
+	if l2TokenInfo == nil {
+		return "", "", fmt.Errorf("l2TokenInfo not found")
+	}
+
+	tokenSymbol := l2TokenInfo.Symbol
+	tokenDecimals := l2TokenInfo.Decimals
 	amount := formatAmount(l2With.Amount, tokenDecimals)
 
 	var title string
