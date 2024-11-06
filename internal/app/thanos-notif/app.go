@@ -79,8 +79,8 @@ func New(ctx context.Context, cfg *Config) (*App, error) {
 		l2Client:     l2Client,
 	}
 
-	// slackNotifier := notification.MakeSlackNotificationService(cfg.SlackURL, 5)
-	slackNotifier := notification.MakeDebugNotifier()
+	slackNotifier := notification.MakeSlackNotificationService(cfg.SlackURL, 5)
+	// slackNotifier := notification.MakeDebugNotifier()
 
 	l1Listener, err := app.initL1Listener(ctx, slackNotifier, l1Client, redisClient)
 	if err != nil {
