@@ -22,7 +22,7 @@ func (p *App) handleMessagePassed(vLog *ethereumTypes.Log) (string, string, erro
 		return "", "", err
 	}
 	// Slack notify title and text
-	title := fmt.Sprintf("[" + p.cfg.Network + "] [Withdrawal Finalized]")
+	title := fmt.Sprintf("[" + p.cfg.Network + "] [Withdrawal Intialized]")
 	text := fmt.Sprintf("Tx: "+p.cfg.L2ExplorerUrl+"/tx/%s\n"+
 		"Withrawal Hash: %s\n"+
 		"Sender: %s\n"+
