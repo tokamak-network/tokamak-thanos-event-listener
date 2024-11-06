@@ -11,6 +11,7 @@ const (
 	L1WsRpcUrlFlagName       = "l1-ws-rpc"
 	L2WsRpcUrlFlagName       = "l2-ws-rpc"
 	L2HttpRpcUrlFlagName     = "l2-http-rpc"
+	OptimismPortalFlagName   = "optimism-portal"
 	L1StandardBridgeFlagName = "l1-standard-bridge-address"
 	L2StandardBridgeFlagName = "l2-standard-bridge-address"
 	L1UsdcBridgeFlagName     = "l1-usdc-bridge-address"
@@ -53,6 +54,11 @@ var (
 		Usage:   "L2 HTTP RPC url",
 		Value:   "http://localhost:9545",
 		EnvVars: []string{"L2_HTTP_RPC"},
+	}
+	OptimismPortalFlag = &cli.StringFlag{
+		Name:    OptimismPortalFlagName,
+		Usage:   "OptimismPortal address",
+		EnvVars: []string{"OPTIMISM_PORTAL"},
 	}
 	L1StandardBridgeFlag = &cli.StringFlag{
 		Name:    L1StandardBridgeFlagName,
@@ -121,6 +127,7 @@ func Flags() []cli.Flag {
 		L1HttpRpcFlag,
 		L2WsRpcFlag,
 		L2HttpRpcFlag,
+		OptimismPortalFlag,
 		L1StandardBridgeFlag,
 		L2StandardBridgeFlag,
 		L1UsdcBridgeFlag,

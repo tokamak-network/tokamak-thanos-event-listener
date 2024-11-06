@@ -10,6 +10,60 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
+func (p *App) handleMessagePassed(vLog *ethereumTypes.Log) (string, string, error) {
+	log.GetLogger().Infow("Got Withdrawal finalized Event", "event", vLog)
+	l2ToL1MessagePasserFilterer, err := p.getL2ToL1MessagePasserFilterers()
+	if err != nil {
+		return "", "", err
+	}
+	event, err := l2ToL1MessagePasserFilterer.ParseMessagePassed(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("MessagePassed event parsing fail", "error", err)
+		return "", "", err
+	}
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + p.cfg.Network + "] [Withdrawal Finalized]")
+	text := fmt.Sprintf("Tx: "+p.cfg.L2ExplorerUrl+"/tx/%s\n"+
+		"Withrawal Hash: %s\n"+
+		"Sender: %s\n"+
+		"Target: %s\n"+
+		"Value: %d\n"+
+		"GasLimit: %d\n"+
+		"Data: %s\n"+
+		"Nonce: %d",
+		vLog.TxHash,
+		event.WithdrawalHash,
+		event.Sender,
+		event.Target,
+		event.Value,
+		event.GasLimit,
+		event.Data,
+		event.Nonce)
+
+	return title, text, nil
+}
+
+func (p *App) handleWithdrawalFinalized(vLog *ethereumTypes.Log) (string, string, error) {
+	log.GetLogger().Infow("Got Withdrawal finalized Event", "event", vLog)
+
+	optimismPortalFilterer, err := p.getOptimismPortalFilterers()
+	if err != nil {
+		return "", "", err
+	}
+
+	event, err := optimismPortalFilterer.ParseWithdrawalFinalized(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("WithdrawalFinalized event parsing fail", "error", err)
+		return "", "", err
+	}
+
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + p.cfg.Network + "] [Withdrawal Finalized]")
+	text := fmt.Sprintf("Tx: "+p.cfg.L1ExplorerUrl+"/tx/%s\nWithrawal Hash: %s\nStatus: %b", vLog.TxHash, event.WithdrawalHash, event.Success)
+
+	return title, text, nil
+}
+
 func (p *App) withdrawalETHFinalizedEvent(vLog *ethereumTypes.Log) (string, string, error) {
 	log.GetLogger().Infow("Got ETH Withdrawal Event", "event", vLog)
 

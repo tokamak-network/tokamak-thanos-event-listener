@@ -111,7 +111,7 @@ func (bk *BlockKeeper) Head(_ context.Context) (*ethereumTypes.Header, error) {
 }
 
 func (bk *BlockKeeper) SetHead(ctx context.Context, header *ethereumTypes.Header, removedBlockHash common.Hash) error {
-	log.GetLogger().Infow("Set head", "new", header.Hash(), "removed", removedBlockHash.Hex())
+	log.GetLogger().Debug("Set head", "new", header.Hash(), "removed", removedBlockHash.Hex())
 	bk.head = header
 
 	if removedBlockHash.Cmp(constant.ZeroHash) != 0 {

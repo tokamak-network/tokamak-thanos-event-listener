@@ -15,9 +15,12 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/repository"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
+	"github.com/tokamak-network/tokamak-thanos/op-bindings/predeploys"
 )
 
 const (
+	MessagePassedEventABI            = "MessagePassed(uint256,address,address,uint256,uint256,bytes,bytes32)"
+	WithdrawalFinalizedEventABI      = "WithdrawalFinalized(bytes32,bool)"
 	ETHDepositInitiatedEventABI      = "ETHDepositInitiated(address,address,uint256,bytes)"
 	ETHWithdrawalFinalizedEventABI   = "ETHWithdrawalFinalized(address,address,uint256,bytes)"
 	ERC20DepositInitiatedEventABI    = "ERC20DepositInitiated(address,address,address,address,uint256,bytes)"
@@ -76,7 +79,8 @@ func New(ctx context.Context, cfg *Config) (*App, error) {
 		l2Client:     l2Client,
 	}
 
-	slackNotifier := notification.MakeSlackNotificationService(cfg.SlackURL, 5)
+	// slackNotifier := notification.MakeSlackNotificationService(cfg.SlackURL, 5)
+	slackNotifier := notification.MakeDebugNotifier()
 
 	l1Listener, err := app.initL1Listener(ctx, slackNotifier, l1Client, redisClient)
 	if err != nil {
@@ -125,7 +129,7 @@ func (p *App) Start(ctx context.Context) error {
 	return nil
 }
 
-func (p *App) initL1Listener(ctx context.Context, slackNotifier *notification.SlackNotificationService, l1Client *bcclient.Client, redisClient redislib.UniversalClient) (*listener.EventService, error) {
+func (p *App) initL1Listener(ctx context.Context, slackNotifier listener.Notifier, l1Client *bcclient.Client, redisClient redislib.UniversalClient) (*listener.EventService, error) {
 	l1SyncBlockMetadataRepo := repository.NewSyncBlockMetadataRepository(fmt.Sprintf("%s:%s", p.cfg.Network, "l1"), redisClient)
 	l1BlockKeeper, err := repository.NewBlockKeeper(ctx, l1Client, l1SyncBlockMetadataRepo)
 	if err != nil {
@@ -139,22 +143,25 @@ func (p *App) initL1Listener(ctx context.Context, slackNotifier *notification.Sl
 		return nil, err
 	}
 
-	// L1StandardBridge ETH deposit and withdrawal
-	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, p.depositETHInitiatedEvent))
-	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ETHWithdrawalFinalizedEventABI, p.withdrawalETHFinalizedEvent))
+	// OptimismPortal
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.OptimismPortal, WithdrawalFinalizedEventABI, p.handleWithdrawalFinalized))
 
-	// L1StandardBridge ERC20 deposit and withdrawal
-	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ERC20DepositInitiatedEventABI, p.depositERC20InitiatedEvent))
-	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ERC20WithdrawalFinalizedEventABI, p.withdrawalERC20FinalizedEvent))
+	// // L1StandardBridge ETH deposit and withdrawal
+	// l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, p.depositETHInitiatedEvent))
+	// l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ETHWithdrawalFinalizedEventABI, p.withdrawalETHFinalizedEvent))
 
-	// L1UsdcBridge ERC20 deposit and withdrawal
-	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1UsdcBridge, ERC20DepositInitiatedEventABI, p.depositUsdcInitiatedEvent))
-	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1UsdcBridge, ERC20WithdrawalFinalizedEventABI, p.withdrawalUsdcFinalizedEvent))
+	// // L1StandardBridge ERC20 deposit and withdrawal
+	// l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ERC20DepositInitiatedEventABI, p.depositERC20InitiatedEvent))
+	// l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ERC20WithdrawalFinalizedEventABI, p.withdrawalERC20FinalizedEvent))
+
+	// // L1UsdcBridge ERC20 deposit and withdrawal
+	// l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1UsdcBridge, ERC20DepositInitiatedEventABI, p.depositUsdcInitiatedEvent))
+	// l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1UsdcBridge, ERC20WithdrawalFinalizedEventABI, p.withdrawalUsdcFinalizedEvent))
 
 	return l1Service, nil
 }
 
-func (p *App) initL2Listener(ctx context.Context, slackNotifier *notification.SlackNotificationService, l2Client *bcclient.Client, redisClient redislib.UniversalClient) (*listener.EventService, error) {
+func (p *App) initL2Listener(ctx context.Context, slackNotifier listener.Notifier, l2Client *bcclient.Client, redisClient redislib.UniversalClient) (*listener.EventService, error) {
 	l2SyncBlockMetadataRepo := repository.NewSyncBlockMetadataRepository(fmt.Sprintf("%s:%s", p.cfg.Network, "l2"), redisClient)
 	l2BlockKeeper, err := repository.NewBlockKeeper(ctx, l2Client, l2SyncBlockMetadataRepo)
 	if err != nil {
@@ -168,13 +175,16 @@ func (p *App) initL2Listener(ctx context.Context, slackNotifier *notification.Sl
 		return nil, err
 	}
 
-	// L2StandardBridge deposit and withdrawal
-	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2StandardBridge, DepositFinalizedEventABI, p.depositFinalizedEvent))
-	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, p.withdrawalInitiatedEvent))
+	// L2ToL1MessagePasser
+	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, predeploys.L2ToL1MessagePasser, MessagePassedEventABI, p.handleMessagePassed))
 
-	// L2UsdcBridge ERC20 deposit and withdrawal
-	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2UsdcBridge, DepositFinalizedEventABI, p.depositUsdcFinalizedEvent))
-	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2UsdcBridge, WithdrawalInitiatedEventABI, p.withdrawalUsdcInitiatedEvent))
+	// // L2StandardBridge deposit and withdrawal
+	// l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2StandardBridge, DepositFinalizedEventABI, p.depositFinalizedEvent))
+	// l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2StandardBridge, WithdrawalInitiatedEventABI, p.withdrawalInitiatedEvent))
+
+	// // L2UsdcBridge ERC20 deposit and withdrawal
+	// l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2UsdcBridge, DepositFinalizedEventABI, p.depositUsdcFinalizedEvent))
+	// l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2UsdcBridge, WithdrawalInitiatedEventABI, p.withdrawalUsdcInitiatedEvent))
 
 	return l2Service, nil
 }

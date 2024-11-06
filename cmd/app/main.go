@@ -38,6 +38,7 @@ func startListener(ctx *cli.Context) error {
 		L1HttpRpc:        ctx.String(flags.L1HttpRpcUrlFlagName),
 		L2WsRpc:          ctx.String(flags.L2WsRpcUrlFlagName),
 		L2HttpRpc:        ctx.String(flags.L2HttpRpcUrlFlagName),
+		OptimismPortal:   ctx.String(flags.OptimismPortalFlagName),
 		L1StandardBridge: ctx.String(flags.L1StandardBridgeFlagName),
 		L2StandardBridge: ctx.String(flags.L2StandardBridgeFlagName),
 		L1UsdcBridge:     ctx.String(flags.L1UsdcBridgeFlagName),
@@ -52,7 +53,6 @@ func startListener(ctx *cli.Context) error {
 			DB:        ctx.Int(flags.RedisDBFlagName),
 		},
 	}
-
 	if err := config.Validate(); err != nil {
 		log.GetLogger().Fatalw("Failed to start the application", "error", err)
 	}
