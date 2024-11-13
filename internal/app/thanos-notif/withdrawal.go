@@ -124,7 +124,7 @@ defaultCase:
 		return "", "", err
 	}
 	// Slack notify title and text
-	title := fmt.Sprintf("  <---------------> L1 [" + p.cfg.Network + "] [Withdrawal Finalized]")
+	title := fmt.Sprintf("[" + p.cfg.Network + "] [Withdrawal Finalized]")
 	text := fmt.Sprintf("Tx: "+p.cfg.L1ExplorerUrl+"/tx/%s\nWithrawal Hash: %s\nStatus: %b", vLog.TxHash, hex.EncodeToString(event.WithdrawalHash[:]), event.Success)
 
 	return title, text, nil
