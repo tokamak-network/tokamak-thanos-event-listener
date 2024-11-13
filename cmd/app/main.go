@@ -39,6 +39,7 @@ func startListener(ctx *cli.Context) error {
 		L2WsRpc:          ctx.String(flags.L2WsRpcUrlFlagName),
 		L2HttpRpc:        ctx.String(flags.L2HttpRpcUrlFlagName),
 		OptimismPortal:   ctx.String(flags.OptimismPortalFlagName),
+		L1XDM:            ctx.String(flags.L1XDMFlagName),
 		L1StandardBridge: ctx.String(flags.L1StandardBridgeFlagName),
 		L2StandardBridge: ctx.String(flags.L2StandardBridgeFlagName),
 		L1UsdcBridge:     ctx.String(flags.L1UsdcBridgeFlagName),

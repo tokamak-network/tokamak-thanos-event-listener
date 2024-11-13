@@ -17,6 +17,10 @@ type Config struct {
 
 	OptimismPortal string
 
+	L1XDM string
+
+	L2NativeToken string
+
 	L1StandardBridge string
 	L2StandardBridge string
 
@@ -27,6 +31,8 @@ type Config struct {
 
 	L1ExplorerUrl string
 	L2ExplorerUrl string
+
+	L2NativeTokenAddress string
 
 	L1TokenAddresses []string
 	L2TokenAddresses []string
@@ -53,6 +59,10 @@ func (c *Config) Validate() error {
 
 	if c.OptimismPortal == "" {
 		return errors.New("OptimismPortal is required")
+	}
+
+	if c.L1XDM == "" {
+		return errors.New("L1CrossDomainMessenger is required")
 	}
 
 	if c.L1StandardBridge == "" {

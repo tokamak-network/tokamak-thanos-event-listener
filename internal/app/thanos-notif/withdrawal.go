@@ -1,14 +1,44 @@
 package thanosnotif
 
 import (
+	"context"
+	"encoding/hex"
+	"errors"
 	"fmt"
+	"math/big"
+	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	ethereumTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindings"
+	"github.com/tokamak-network/tokamak-thanos/op-bindings/bindingspreview"
+	"github.com/tokamak-network/tokamak-thanos/op-bindings/predeploys"
 
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/erc20"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
+
+func (p *App) notifyRawInitWithdrawalEvent(vLog *ethereumTypes.Log, event *bindings.L2ToL1MessagePasserMessagePassed) (string, string, error) {
+	title := fmt.Sprintf("[" + p.cfg.Network + "] [Withdrawal Intialized]")
+	text := fmt.Sprintf("Tx: "+p.cfg.L2ExplorerUrl+"/tx/%s\n"+
+		"Withrawal Hash: %s\n"+
+		"Sender: %s\n"+
+		"Target: %s\n"+
+		"Value: %d\n"+
+		"GasLimit: %d\n"+
+		"Data: %s\n"+
+		"Nonce: %d",
+		vLog.TxHash.Hex(),
+		hex.EncodeToString(event.WithdrawalHash[:]),
+		event.Sender,
+		event.Target,
+		event.Value,
+		event.GasLimit,
+		hex.EncodeToString(event.Data),
+		event.Nonce)
+	return title, text, nil
+}
 
 func (p *App) handleMessagePassed(vLog *ethereumTypes.Log) (string, string, error) {
 	log.GetLogger().Infow("Got Withdrawal finalized Event", "event", vLog)
@@ -21,45 +51,81 @@ func (p *App) handleMessagePassed(vLog *ethereumTypes.Log) (string, string, erro
 		log.GetLogger().Errorw("MessagePassed event parsing fail", "error", err)
 		return "", "", err
 	}
-	// Slack notify title and text
-	title := fmt.Sprintf("[" + p.cfg.Network + "] [Withdrawal Intialized]")
-	text := fmt.Sprintf("Tx: "+p.cfg.L2ExplorerUrl+"/tx/%s\n"+
-		"Withrawal Hash: %s\n"+
-		"Sender: %s\n"+
-		"Target: %s\n"+
-		"Value: %d\n"+
-		"GasLimit: %d\n"+
-		"Data: %s\n"+
-		"Nonce: %d",
-		vLog.TxHash,
-		event.WithdrawalHash,
-		event.Sender,
-		event.Target,
-		event.Value,
-		event.GasLimit,
-		event.Data,
-		event.Nonce)
 
-	return title, text, nil
+	if hex.EncodeToString(event.Sender[:]) == predeploys.L2CrossDomainMessenger[2:] {
+		messengerABI, err := abi.JSON(strings.NewReader(bindings.L1CrossDomainMessengerABI))
+		if err != nil {
+			goto defaultCase
+		}
+		in, err := UnpackInputData(messengerABI, "relayMessage", event.Data)
+		if err != nil {
+			goto defaultCase
+		}
+		nonce, sender, target, value, minGasLimit, message := in[0].(*big.Int), in[1].(common.Address), in[2].(common.Address), in[3], in[4], in[5].([]byte)
+		log.GetLogger().Debug("[ Sent message ]", nonce, sender, target, value, minGasLimit, message)
+		if target.Hex() == p.cfg.L1StandardBridge || target.Hex() == p.cfg.L1UsdcBridge {
+			return "", "", errors.New("handle in another functions")
+		}
+	}
+defaultCase:
+	return p.notifyRawInitWithdrawalEvent(vLog, event)
 }
 
 func (p *App) handleWithdrawalFinalized(vLog *ethereumTypes.Log) (string, string, error) {
 	log.GetLogger().Infow("Got Withdrawal finalized Event", "event", vLog)
 
-	optimismPortalFilterer, err := p.getOptimismPortalFilterers()
+	finalizedTx, _, err := p.l1Client.GetClient().TransactionByHash(context.Background(), vLog.TxHash)
+	if err != nil {
+		return "", "", err
+	}
+	finalizedCallData := finalizedTx.Data()
+	portalABI, err := abi.JSON(strings.NewReader(bindingspreview.OptimismPortal2ABI))
 	if err != nil {
 		return "", "", err
 	}
 
+	_unpackedInput, err := UnpackInputData(portalABI, "finalizeWithdrawalTransaction", finalizedCallData)
+	if err != nil {
+		return "", "", err
+	}
+
+	unpackedInput := _unpackedInput[0].(struct {
+		Nonce    *big.Int       "json:\"nonce\""
+		Sender   common.Address "json:\"sender\""
+		Target   common.Address "json:\"target\""
+		Value    *big.Int       "json:\"value\""
+		GasLimit *big.Int       "json:\"gasLimit\""
+		Data     []uint8        "json:\"data\""
+	})
+	if unpackedInput.Target.Hex() == p.cfg.L1XDM {
+		messengerABI, err := abi.JSON(strings.NewReader(bindings.L1CrossDomainMessengerABI))
+		if err != nil {
+			goto defaultCase
+		}
+		in, err := UnpackInputData(messengerABI, "relayMessage", unpackedInput.Data)
+		if err != nil {
+			goto defaultCase
+		}
+		nonce, sender, target, value, minGasLimit, message := in[0].(*big.Int), in[1].(common.Address), in[2].(common.Address), in[3], in[4], in[5].([]byte)
+		log.GetLogger().Debug("[Relay Message ]", nonce, sender, target, value, minGasLimit, message)
+		if target.Hex() == p.cfg.L1StandardBridge || target.Hex() == p.cfg.L1UsdcBridge {
+			return "", "", errors.New("handle finalizing in another functions")
+		}
+	}
+
+defaultCase:
+	optimismPortalFilterer, err := p.getOptimismPortalFilterers()
+	if err != nil {
+		return "", "", err
+	}
 	event, err := optimismPortalFilterer.ParseWithdrawalFinalized(*vLog)
 	if err != nil {
 		log.GetLogger().Errorw("WithdrawalFinalized event parsing fail", "error", err)
 		return "", "", err
 	}
-
 	// Slack notify title and text
-	title := fmt.Sprintf("[" + p.cfg.Network + "] [Withdrawal Finalized]")
-	text := fmt.Sprintf("Tx: "+p.cfg.L1ExplorerUrl+"/tx/%s\nWithrawal Hash: %s\nStatus: %b", vLog.TxHash, event.WithdrawalHash, event.Success)
+	title := fmt.Sprintf("  <---------------> L1 [" + p.cfg.Network + "] [Withdrawal Finalized]")
+	text := fmt.Sprintf("Tx: "+p.cfg.L1ExplorerUrl+"/tx/%s\nWithrawal Hash: %s\nStatus: %b", vLog.TxHash, hex.EncodeToString(event.WithdrawalHash[:]), event.Success)
 
 	return title, text, nil
 }

@@ -5,12 +5,18 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/bcclient"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/erc20"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
+
+func UnpackInputData(contractABI abi.ABI, name string, data []byte) ([]interface{}, error) {
+	method := contractABI.Methods[name]
+	return method.Inputs.Unpack((data[4:]))
+}
 
 func formatAmount(amount *big.Int, tokenDecimals int) string {
 	amountFloat := new(big.Float).SetInt(amount)

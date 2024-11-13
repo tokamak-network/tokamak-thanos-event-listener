@@ -117,7 +117,6 @@ func (p *App) Start(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
 		return nil
 	})
 

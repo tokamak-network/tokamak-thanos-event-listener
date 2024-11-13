@@ -12,6 +12,7 @@ const (
 	L2WsRpcUrlFlagName       = "l2-ws-rpc"
 	L2HttpRpcUrlFlagName     = "l2-http-rpc"
 	OptimismPortalFlagName   = "optimism-portal"
+	L1XDMFlagName            = "l1-xdm-address"
 	L1StandardBridgeFlagName = "l1-standard-bridge-address"
 	L2StandardBridgeFlagName = "l2-standard-bridge-address"
 	L1UsdcBridgeFlagName     = "l1-usdc-bridge-address"
@@ -60,6 +61,11 @@ var (
 		Usage:   "OptimismPortal address",
 		EnvVars: []string{"OPTIMISM_PORTAL"},
 	}
+	L1XDMFlag = &cli.StringFlag{
+		Name:    L1XDMFlagName,
+		Usage:   "L1CrossDomainMessenger address",
+		EnvVars: []string{"L1_XDM"},
+	}
 	L1StandardBridgeFlag = &cli.StringFlag{
 		Name:    L1StandardBridgeFlagName,
 		Usage:   "L1StandardBridge address",
@@ -96,6 +102,7 @@ var (
 		Usage:   "L2 explorer url",
 		EnvVars: []string{"L2_EXPLORER_URL"},
 	}
+
 	L1TokenAddressesFlag = &cli.StringSliceFlag{
 		Name:    L1TokenAddresses,
 		Usage:   "List of L1 tokens address to get symbol and decimals",
@@ -128,6 +135,7 @@ func Flags() []cli.Flag {
 		L2WsRpcFlag,
 		L2HttpRpcFlag,
 		OptimismPortalFlag,
+		L1XDMFlag,
 		L1StandardBridgeFlag,
 		L2StandardBridgeFlag,
 		L1UsdcBridgeFlag,

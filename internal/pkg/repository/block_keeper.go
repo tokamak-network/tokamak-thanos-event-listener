@@ -50,10 +50,9 @@ func NewBlockKeeper(ctx context.Context, bcSource BlockChainSource, syncBlockMet
 
 	currentBlockHash, err := syncBlockMetadataKeeper.GetHead(ctx)
 	if err != nil {
-		log.GetLogger().Errorw("Failed to get head", "err", err)
+		log.GetLogger().Errorw("Failed to get head", currentBlockHash, "err", err)
 		return nil, err
 	}
-
 	var (
 		head    *ethereumTypes.Header
 		blockNo uint64
