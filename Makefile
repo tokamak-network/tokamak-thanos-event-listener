@@ -10,7 +10,7 @@ all: build
 build: $(TARGET)
 
 run: $(TARGET)
-	$<
+	$< listener
 
 $(TARGET): $(SOURCE_FILES)
 	go build -o $@ ./cmd/app/main.go

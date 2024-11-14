@@ -15,6 +15,12 @@ type Config struct {
 	L2HttpRpc string
 	L2WsRpc   string
 
+	OptimismPortal string
+
+	L1XDM string
+
+	L2NativeToken string
+
 	L1StandardBridge string
 	L2StandardBridge string
 
@@ -25,6 +31,8 @@ type Config struct {
 
 	L1ExplorerUrl string
 	L2ExplorerUrl string
+
+	L2NativeTokenAddress string
 
 	L1TokenAddresses []string
 	L2TokenAddresses []string
@@ -49,6 +57,14 @@ func (c *Config) Validate() error {
 		return errors.New("l2 http rpc address is required")
 	}
 
+	if c.OptimismPortal == "" {
+		return errors.New("OptimismPortal is required")
+	}
+
+	if c.L1XDM == "" {
+		return errors.New("L1CrossDomainMessenger is required")
+	}
+
 	if c.L1StandardBridge == "" {
 		return errors.New("l1 standard bridge is required")
 	}
@@ -63,10 +79,6 @@ func (c *Config) Validate() error {
 
 	if len(c.L1TokenAddresses) == 0 {
 		return errors.New("token addresses is required")
-	}
-
-	if c.RedisConfig.Addresses == "" {
-		return errors.New("redis address is required")
 	}
 
 	return nil

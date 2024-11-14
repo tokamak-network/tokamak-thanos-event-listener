@@ -5,12 +5,18 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/bcclient"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/erc20"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
+
+func UnpackInputData(contractABI abi.ABI, name string, data []byte) ([]interface{}, error) {
+	method := contractABI.Methods[name]
+	return method.Inputs.Unpack((data[4:]))
+}
 
 func formatAmount(amount *big.Int, tokenDecimals int) string {
 	amountFloat := new(big.Float).SetInt(amount)
@@ -23,6 +29,9 @@ func formatAmount(amount *big.Int, tokenDecimals int) string {
 func fetchTokensInfo(bcClient *bcclient.Client, tokenAddresses []string) (map[string]*types.Token, error) {
 	tokenInfoMap := make(map[string]*types.Token)
 	for _, tokenAddress := range tokenAddresses {
+		if tokenAddress == "" {
+			continue
+		}
 		tokenInfo, err := erc20.FetchTokenInfo(bcClient, tokenAddress)
 		if err != nil {
 			log.GetLogger().Errorw("Failed to fetch token info", "error", err, "address", tokenAddress)

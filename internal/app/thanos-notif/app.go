@@ -15,9 +15,12 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/repository"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/internal/pkg/types"
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
+	"github.com/tokamak-network/tokamak-thanos/op-bindings/predeploys"
 )
 
 const (
+	MessagePassedEventABI            = "MessagePassed(uint256,address,address,uint256,uint256,bytes,bytes32)"
+	WithdrawalFinalizedEventABI      = "WithdrawalFinalized(bytes32,bool)"
 	ETHDepositInitiatedEventABI      = "ETHDepositInitiated(address,address,uint256,bytes)"
 	ETHWithdrawalFinalizedEventABI   = "ETHWithdrawalFinalized(address,address,uint256,bytes)"
 	ERC20DepositInitiatedEventABI    = "ERC20DepositInitiated(address,address,address,address,uint256,bytes)"
@@ -77,6 +80,7 @@ func New(ctx context.Context, cfg *Config) (*App, error) {
 	}
 
 	slackNotifier := notification.MakeSlackNotificationService(cfg.SlackURL, 5)
+	// slackNotifier := notification.MakeDebugNotifier()
 
 	l1Listener, err := app.initL1Listener(ctx, slackNotifier, l1Client, redisClient)
 	if err != nil {
@@ -113,7 +117,6 @@ func (p *App) Start(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
 		return nil
 	})
 
@@ -125,7 +128,7 @@ func (p *App) Start(ctx context.Context) error {
 	return nil
 }
 
-func (p *App) initL1Listener(ctx context.Context, slackNotifier *notification.SlackNotificationService, l1Client *bcclient.Client, redisClient redislib.UniversalClient) (*listener.EventService, error) {
+func (p *App) initL1Listener(ctx context.Context, slackNotifier listener.Notifier, l1Client *bcclient.Client, redisClient redislib.UniversalClient) (*listener.EventService, error) {
 	l1SyncBlockMetadataRepo := repository.NewSyncBlockMetadataRepository(fmt.Sprintf("%s:%s", p.cfg.Network, "l1"), redisClient)
 	l1BlockKeeper, err := repository.NewBlockKeeper(ctx, l1Client, l1SyncBlockMetadataRepo)
 	if err != nil {
@@ -138,6 +141,9 @@ func (p *App) initL1Listener(ctx context.Context, slackNotifier *notification.Sl
 		log.GetLogger().Errorw("Failed to make L1 service", "error", err)
 		return nil, err
 	}
+
+	// OptimismPortal
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.OptimismPortal, WithdrawalFinalizedEventABI, p.handleWithdrawalFinalized))
 
 	// L1StandardBridge ETH deposit and withdrawal
 	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, p.depositETHInitiatedEvent))
@@ -154,7 +160,7 @@ func (p *App) initL1Listener(ctx context.Context, slackNotifier *notification.Sl
 	return l1Service, nil
 }
 
-func (p *App) initL2Listener(ctx context.Context, slackNotifier *notification.SlackNotificationService, l2Client *bcclient.Client, redisClient redislib.UniversalClient) (*listener.EventService, error) {
+func (p *App) initL2Listener(ctx context.Context, slackNotifier listener.Notifier, l2Client *bcclient.Client, redisClient redislib.UniversalClient) (*listener.EventService, error) {
 	l2SyncBlockMetadataRepo := repository.NewSyncBlockMetadataRepository(fmt.Sprintf("%s:%s", p.cfg.Network, "l2"), redisClient)
 	l2BlockKeeper, err := repository.NewBlockKeeper(ctx, l2Client, l2SyncBlockMetadataRepo)
 	if err != nil {
@@ -167,6 +173,9 @@ func (p *App) initL2Listener(ctx context.Context, slackNotifier *notification.Sl
 		log.GetLogger().Errorw("Failed to make L2 service", "error", err)
 		return nil, err
 	}
+
+	// L2ToL1MessagePasser
+	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, predeploys.L2ToL1MessagePasser, MessagePassedEventABI, p.handleMessagePassed))
 
 	// L2StandardBridge deposit and withdrawal
 	l2Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L2StandardBridge, DepositFinalizedEventABI, p.depositFinalizedEvent))

@@ -207,7 +207,7 @@ func (s *EventService) subscribeNewHead(
 		for {
 			select {
 			case newHead := <-headChanges:
-				s.l.Infow("New head received", "header", newHead.Number)
+				// s.l.Infow("New head received", "header", newHead.Number)
 
 				logs, err := s.bcClient.GetLogs(ctx, newHead.Hash())
 				if err != nil {
