@@ -11,15 +11,19 @@ func MakeDebugNotifier() *DebugNotifier {
 }
 
 func (notifier *DebugNotifier) NotifyWithReTry(title string, text string) {
+	fmt.Println()
 	fmt.Println("Title: ", title)
 	fmt.Println("Text:\n", text)
+	fmt.Println()
 }
 
 func (notifier *DebugNotifier) Notify(title string, text string) error {
 	fmt.Println()
-	fmt.Println(" ------------------------------- ")
+	fmt.Println(" /* ------------------------------- ")
 	fmt.Println("Title: ", title)
 	fmt.Println("Text:\n", text)
+	fmt.Println(" ------------------------------- */ ")
+	fmt.Println()
 	return nil
 }
 
