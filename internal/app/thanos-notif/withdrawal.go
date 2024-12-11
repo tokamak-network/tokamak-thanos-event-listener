@@ -64,7 +64,7 @@ func (p *App) handleMessagePassed(vLog *ethereumTypes.Log) (string, string, erro
 		nonce, sender, target, value, minGasLimit, message := in[0].(*big.Int), in[1].(common.Address), in[2].(common.Address), in[3], in[4], in[5].([]byte)
 		log.GetLogger().Debug("[ Sent message ]", nonce, sender, target, value, minGasLimit, message)
 		if target.Hex() == p.cfg.L1StandardBridge || target.Hex() == p.cfg.L1UsdcBridge {
-			fmt.Println("Not handled in MessagePassed")
+			log.GetLogger().Debug("Not handled in MessagePassed")
 			return "", "", errors.New(" handle in other function")
 		}
 	}
