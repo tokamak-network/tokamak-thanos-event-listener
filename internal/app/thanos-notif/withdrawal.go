@@ -64,7 +64,8 @@ func (p *App) handleMessagePassed(vLog *ethereumTypes.Log) (string, string, erro
 		nonce, sender, target, value, minGasLimit, message := in[0].(*big.Int), in[1].(common.Address), in[2].(common.Address), in[3], in[4], in[5].([]byte)
 		log.GetLogger().Debug("[ Sent message ]", nonce, sender, target, value, minGasLimit, message)
 		if target.Hex() == p.cfg.L1StandardBridge || target.Hex() == p.cfg.L1UsdcBridge {
-			return "", "", errors.New("handle in another functions")
+			log.GetLogger().Debug("Not handled in MessagePassed")
+			return "", "", errors.New(" handle in other function")
 		}
 	}
 defaultCase:
@@ -109,7 +110,7 @@ func (p *App) handleWithdrawalFinalized(vLog *ethereumTypes.Log) (string, string
 		nonce, sender, target, value, minGasLimit, message := in[0].(*big.Int), in[1].(common.Address), in[2].(common.Address), in[3], in[4], in[5].([]byte)
 		log.GetLogger().Debug("[Relay Message ]", nonce, sender, target, value, minGasLimit, message)
 		if target.Hex() == p.cfg.L1StandardBridge || target.Hex() == p.cfg.L1UsdcBridge {
-			return "", "", errors.New("handle finalizing in another functions")
+			return "", "", errors.New("handle in other function")
 		}
 	}
 
@@ -126,6 +127,35 @@ defaultCase:
 	// Slack notify title and text
 	title := fmt.Sprintf("[" + p.cfg.Network + "] [Withdrawal Finalized]")
 	text := fmt.Sprintf("Tx: "+p.cfg.L1ExplorerUrl+"/tx/%s\nWithrawal Hash: %s\nStatus: %b", vLog.TxHash, hex.EncodeToString(event.WithdrawalHash[:]), event.Success)
+
+	return title, text, nil
+}
+
+func (p *App) withdrawalNativeTokenFinalizedEvent(vLog *ethereumTypes.Log) (string, string, error) {
+	log.GetLogger().Infow("Got TON Withdrawal Event", "event", vLog)
+
+	l1BridgeFilterer, _, err := p.getBridgeFilterers()
+	if err != nil {
+		return "", "", err
+	}
+
+	event, err := l1BridgeFilterer.ParseNativeTokenBridgeFinalized(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("NativeTokenBridgeFinalized event log parsing fail", "error", err)
+		return "", "", err
+	}
+
+	ethWith := bindings.L1StandardBridgeNativeTokenBridgeFinalized{
+		From:   event.From,
+		To:     event.To,
+		Amount: event.Amount,
+	}
+
+	Amount := formatAmount(ethWith.Amount, 18)
+
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + p.cfg.Network + "] [TON Withdrawal Finalized]")
+	text := fmt.Sprintf("Tx: "+p.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+p.cfg.L2ExplorerUrl+"/address/%s\nTo: "+p.cfg.L1ExplorerUrl+"/address/%s\nAmount: %s TON", vLog.TxHash, ethWith.From, ethWith.To, Amount)
 
 	return title, text, nil
 }

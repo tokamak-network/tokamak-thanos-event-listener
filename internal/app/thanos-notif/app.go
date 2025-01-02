@@ -19,14 +19,16 @@ import (
 )
 
 const (
-	MessagePassedEventABI            = "MessagePassed(uint256,address,address,uint256,uint256,bytes,bytes32)"
-	WithdrawalFinalizedEventABI      = "WithdrawalFinalized(bytes32,bool)"
-	ETHDepositInitiatedEventABI      = "ETHDepositInitiated(address,address,uint256,bytes)"
-	ETHWithdrawalFinalizedEventABI   = "ETHWithdrawalFinalized(address,address,uint256,bytes)"
-	ERC20DepositInitiatedEventABI    = "ERC20DepositInitiated(address,address,address,address,uint256,bytes)"
-	ERC20WithdrawalFinalizedEventABI = "ERC20WithdrawalFinalized(address,address,address,address,uint256,bytes)"
-	DepositFinalizedEventABI         = "DepositFinalized(address,address,address,address,uint256,bytes)"
-	WithdrawalInitiatedEventABI      = "WithdrawalInitiated(address,address,address,address,uint256,bytes)"
+	MessagePassedEventABI              = "MessagePassed(uint256,address,address,uint256,uint256,bytes,bytes32)"
+	WithdrawalFinalizedEventABI        = "WithdrawalFinalized(bytes32,bool)"
+	NativeTokenBridgeInitiatedEventABI = "NativeTokenBridgeInitiated(address,address,uint256,bytes)"
+	NativeTokenBridgeFinalizedEventABI = "NativeTokenBridgeFinalized(address,address,uint256,bytes)"
+	ETHDepositInitiatedEventABI        = "ETHDepositInitiated(address,address,uint256,bytes)"
+	ETHWithdrawalFinalizedEventABI     = "ETHWithdrawalFinalized(address,address,uint256,bytes)"
+	ERC20DepositInitiatedEventABI      = "ERC20DepositInitiated(address,address,address,address,uint256,bytes)"
+	ERC20WithdrawalFinalizedEventABI   = "ERC20WithdrawalFinalized(address,address,address,address,uint256,bytes)"
+	DepositFinalizedEventABI           = "DepositFinalized(address,address,address,address,uint256,bytes)"
+	WithdrawalInitiatedEventABI        = "WithdrawalInitiated(address,address,address,address,uint256,bytes)"
 )
 
 type App struct {
@@ -144,6 +146,10 @@ func (p *App) initL1Listener(ctx context.Context, slackNotifier listener.Notifie
 
 	// OptimismPortal
 	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.OptimismPortal, WithdrawalFinalizedEventABI, p.handleWithdrawalFinalized))
+
+	// L1StandardBridge TON deposit and withdrawal
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, NativeTokenBridgeInitiatedEventABI, p.depositNativeTokenInitiatedEvent))
+	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, NativeTokenBridgeFinalizedEventABI, p.withdrawalNativeTokenFinalizedEvent))
 
 	// L1StandardBridge ETH deposit and withdrawal
 	l1Service.AddSubscribeRequest(listener.MakeEventRequest(slackNotifier, p.cfg.L1StandardBridge, ETHDepositInitiatedEventABI, p.depositETHInitiatedEvent))

@@ -10,6 +10,35 @@ import (
 	"github.com/tokamak-network/tokamak-thanos-event-listener/pkg/log"
 )
 
+func (p *App) depositNativeTokenInitiatedEvent(vLog *ethereumTypes.Log) (string, string, error) {
+	log.GetLogger().Infow("TON Deposit Event", "event", vLog)
+
+	l1BridgeFilterer, _, err := p.getBridgeFilterers()
+	if err != nil {
+		return "", "", err
+	}
+
+	event, err := l1BridgeFilterer.ParseNativeTokenBridgeInitiated(*vLog)
+	if err != nil {
+		log.GetLogger().Errorw("NativeTokenBridgeInitiated event parsing fail", "error", err)
+		return "", "", err
+	}
+
+	ethDep := bindings.L1StandardBridgeNativeTokenBridgeInitiated{
+		From:   event.From,
+		To:     event.To,
+		Amount: event.Amount,
+	}
+
+	Amount := formatAmount(ethDep.Amount, 18)
+
+	// Slack notify title and text
+	title := fmt.Sprintf("[" + p.cfg.Network + "] [TON Deposit Initialized]")
+	text := fmt.Sprintf("Tx: "+p.cfg.L1ExplorerUrl+"/tx/%s\nFrom: "+p.cfg.L1ExplorerUrl+"/address/%s\nTo: "+p.cfg.L2ExplorerUrl+"/address/%s\nAmount: %s TON", vLog.TxHash, ethDep.From, ethDep.To, Amount)
+
+	return title, text, nil
+}
+
 func (p *App) depositETHInitiatedEvent(vLog *ethereumTypes.Log) (string, string, error) {
 	log.GetLogger().Infow("Got ETH Deposit Event", "event", vLog)
 
